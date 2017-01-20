@@ -31,7 +31,7 @@ To generate an image representation of the spectrogram at 100 frames per second,
 sigproc --dir=./recipes spectrogram16k100 in.mp3 out.png
 ```
 
-![Spectrogram](https://github.com/nsetzer/SigProc/master/img/spec.png "Spectrogram")
+![Spectrogram](https://github.com/nsetzer/SigProc/raw/master/img/spec.png "Spectrogram")
 
 To generate an image representation of MFCC features, execute:
 
@@ -39,7 +39,7 @@ To generate an image representation of MFCC features, execute:
 sigproc --dir=./recipes mfcc_16k in.mp3 out.png
 ```
 
-![MFCC](https://``github.com/nsetzer/SigProc/master/img/mfcc.png "MFCC")
+![MFCC](https://github.com/nsetzer/SigProc/raw/master/img/mfcc.png "MFCC")
 
 ---
 
