@@ -17,6 +17,13 @@ Python 3.5 or greater ( may work for 2.7, 3.4 )
 requires :   numpy scipy
 optional :   PIL (pillow), matplotlib
 
+### Installation
+
+```bash
+python setup.py install
+```
+
+
 ### Examples
 
 To generate documentation for all processes, execute:

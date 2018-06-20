@@ -1,4 +1,4 @@
-#! python34 $this
+#! python $this
 import math
 import codecs
 
@@ -58,6 +58,9 @@ class TimeInfoImpl(object):
 
     def save(self,filepath):
         with codecs.open(filepath,"w","utf-8") as wf:
+            print(self.minimum())
+            print(self.maximum())
+            print(self.bins)
             for t,v in self.slice(self.minimum(),self.maximum()):
                 wf.write("%f\t%s\n"%(t,v))
 
@@ -99,12 +102,21 @@ class SparseTimeInfo(TimeInfoImpl):
         samples relative to the overall duration.
     """
 
-    def _build(self,data):
+    def _build(self, data):
         for t,v in data:
             idx = int(t/self.resolution) - self.offset
             if idx not in self.bins:
                 self.bins[idx] = []
             self.bins[idx].append( (t,v) )
+
+
+    def minimum(self):
+        """the smallest possible time value within the data set, in seconds"""
+        return min(self.bins.keys())
+
+    def maximum(self):
+        """the largest possible time value within the data set, in seconds"""
+        return max(self.bins.keys())+1
 
     def _init_bins(self,min_time,max_time):
         self.bins = dict()
@@ -126,9 +138,9 @@ def main():
     ti = SparseTimeInfo( data );
     print(list(ti.slice(-6,6)))
 
-    data = read_ctm( "cnn.ctm" )
-    ti = DenseTimeInfo( data );
-    print(list(ti.slice(3,5)))
+    #data = read_ctm( "cnn.ctm" )
+    #ti = DenseTimeInfo( data );
+    #print(list(ti.slice(3,5)))
 
 if __name__ == '__main__':
     main()

@@ -30,7 +30,7 @@ def runRecipe(procs,jobs):
 
     pipe = PipelineProcessRunner(procs);
 
-    for inFile,outFile in jobs:
+    for inFile, outFile in jobs:
 
         result = pipe.run(inFile)[-1]
 
@@ -41,6 +41,7 @@ def runRecipe(procs,jobs):
         elif isinstance(result,Matrix) and outFile.lower().endswith(".png"):
             Matrix2Image(result.data,outFile)
         else:
+            print(result)
             result.toFile(outFile)
 
 def main():

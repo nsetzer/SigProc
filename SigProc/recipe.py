@@ -154,8 +154,9 @@ class RecipeManager(object):
 
         recipe = self.recipes[recipe_name]
         recipe_opts = []
+        print("load recipe: %s"%recipe_name)
         for idx,section in enumerate(recipe.getProcess()):
-            print(idx,section)
+            print("%d : %s"%(idx,section))
 
             if removeIngest and section == "ingest":
                 continue
