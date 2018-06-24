@@ -122,8 +122,6 @@ class Matrix(object):
         mat.ylabel_fptr = self.ylabel_fptr
         return mat
 
-
-
 class SpectralMatrix(Matrix):
 
     def __init__(self,data,sample_rate,source_rate,freqs,Nfft=None,removeDC=False):
@@ -315,10 +313,11 @@ from .highlight import DummyTrackProcess
 from .spectralflux import SpectralFluxProcess, OnsetDetectorProcess, OnsetDetectorRelativeProcess
 from .filterbank import FilterBank, FilterBankProcess, MidiFilterBankProcess
 from .emph import PreEmphProcess
-from .FeatureNormalize import FMVNProcess
+from .FeatureNormalize import FMVNProcess, ZeroMeanProcess
 from .FeatureStacker import FeatureStackProcess, SdcFeatureStackProcess
 from .SphinxMFCC import MFCCProcess
 from .zcr import ZeroCrossRatioProcess
+from .bicproc import BicProcess
 #from .cor import CorrelateMatrixRowProcess,CorrelateProcess
 
 import pkgutil,inspect,imp,os
@@ -333,10 +332,11 @@ __process_list__ = [
     PreEmphProcess,
     SpectralFluxProcess, OnsetDetectorProcess, OnsetDetectorRelativeProcess,
     FilterBankProcess, MidiFilterBankProcess,
-    FMVNProcess,
+    FMVNProcess, ZeroMeanProcess,
     FeatureStackProcess, SdcFeatureStackProcess,
     MFCCProcess,
     ZeroCrossRatioProcess,
+    BicProcess,
 ]
 
 #def samefile(one,two):

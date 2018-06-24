@@ -75,6 +75,33 @@ class FMVNProcess(SimpleProcess):
                ]
         return opts
 
+class ZeroMeanProcess(SimpleProcess):
+    def run(self):
+        mat = self.matrix.clone()
+        m = np.mean(mat.data)
+
+        mat.data = (self.matrix.data - m)
+
+        _min = np.nanmin(mat.data)
+        _max = np.nanmax(mat.data)
+        _rng = max(abs(_min), abs(_max))
+
+        print("filt mean normalize: ", m, _rng)
+        # mean normalize
+        # scale the min and max to be between -1 and 1
+        mat.data = mat.data / _rng
+        return mat
+
+    @staticmethod
+    def getOptions():
+        opts = [
+                SummarySpecifier("Perform Mean normalization on " \
+                    "each feature vector dimension."),
+                MatrixInSpecifier(), \
+                MatrixOutSpecifier(),
+               ]
+        return opts
+
 if __name__ == '__main__':
     x = np.asarray(range(12)).reshape(6,2)
 
