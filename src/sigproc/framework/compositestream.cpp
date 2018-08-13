@@ -150,15 +150,16 @@ void CompositeStream::_decode()
 {
     size_t index = m_index - m_cursor;
     size_t offset = m_offset - m_cursor;
-
+	CompositeStreamState saved_state = CompositeStreamState::UNKNOWN;
+	CompositeStreamState saved_meta_state = CompositeStreamState::UNKNOWN;
     //size_t saved_index = index;
     //size_t saved_offset = offset;
 
     while (index < m_stream.size()) {
         char c = m_stream.at(index);
 
-        CompositeStreamState saved_state = m_state;
-        CompositeStreamState saved_meta_state = saved_meta_state;
+        saved_state = m_state;
+        saved_meta_state = saved_meta_state;
         std::string str_state = std::string(m_stream.begin(),m_stream.end());
         size_t saved_index = index;
         switch (m_state) {
@@ -200,10 +201,11 @@ void CompositeStream::_decode()
             } else {
                 std::cout << " " << c << "  ";
             }
-            std::cout << saved_state << "/"
+            /*std::cout << saved_state << "/"
                       << saved_meta_state << " "
                       << m_state << "/"
                       << m_meta_state << " " << str_state << std::endl;
+			*/
         }
 
         index++;
@@ -562,6 +564,7 @@ void CompositeStream::_push_collection(CompositeDataType collection)
                 try {
                     current->value<CompositeVector>(&vec);
                 } catch (sigproc::common::exception::SigprocException& e) {
+					(void)e;
                     m_closed = true;
                     COMPOSITE_EXCEPTION("illegal vec operation");
                 }
@@ -575,12 +578,14 @@ void CompositeStream::_push_collection(CompositeDataType collection)
                 try {
                     current->value<CompositeMap>(&map);
                 } catch (sigproc::common::exception::SigprocException& e) {
+					(void)e;
                     m_closed = true;
                     COMPOSITE_EXCEPTION("illegal map operation");
                 }
                 try {
                     m_mapkey->value<char*>(&key);
                 } catch (sigproc::common::exception::SigprocException& e) {
+					(void)e;
                     m_closed = true;
                     COMPOSITE_EXCEPTION("illegal map key operation");
                 }

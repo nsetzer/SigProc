@@ -21,7 +21,7 @@ public:
     ProcessorRegistry() {}
     ~ProcessorRegistry() {}
 
-    static std::map<std::string, std::function<Processor*()>> processor_registry;
+    static std::map<std::string, std::function<Processor*()>>* processor_registry;
 
     static void reg(const std::string& name, std::function<Processor*()> fptr);
     static void reg(const std::string& name, const std::string& element, std::function<Processor*()> fptr);

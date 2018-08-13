@@ -6,7 +6,6 @@
 #include "sigproc/framework/stream.hpp"
 #include "sigproc/framework/port.hpp"
 #include "sigproc/framework/processor.hpp"
-#include "sigproc/framework/registry.hpp"
 #include "sigproc/framework/factory.hpp"
 #include "sigproc/framework/graph.hpp"
 #include "sigproc/nodes/adder.hpp"
@@ -37,9 +36,7 @@ SIGPROC_TEST(Adder_Irregular_Int32) {
     Stream<int32_t>* stream0 = new IrregularStream<int32_t>();
     Stream<int32_t>* stream1 = new IrregularStream<int32_t>();
 
-    ProcessorFactory factory(&ProcessorRegistry::processor_registry);
-
-    Processor* proc = factory.create("Adder<INT32,Irregular>");
+    Processor* proc = new Adder<int32_t, IrregularStream<int32_t>>;
 
     StreamBase* stream2 = proc->getStream("OUTPUT");
     PortBase* port0 = proc->getPort("INPUT0");

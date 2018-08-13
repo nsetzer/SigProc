@@ -5,6 +5,7 @@
 #include <deque>
 #include <vector>
 
+#include "sigproc/framework/enum.hpp"
 #include "sigproc/framework/composite.hpp"
 #include "sigproc/common/exception.hpp"
 

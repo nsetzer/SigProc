@@ -23,12 +23,12 @@ int main() {
 
     std::cout << "registered nodes" << std::endl;
 
-    for (const auto& kv : ProcessorRegistry::processor_registry) {
+    for (const auto& kv : *ProcessorRegistry::processor_registry) {
         std::cout << kv.first << std::endl;
     }
     std::cout << "----------------" << std::endl;
 
-    ProcessorFactory factory(&ProcessorRegistry::processor_registry);
+    ProcessorFactory factory(ProcessorRegistry::processor_registry);
 
     Stream<int32_t>* stream0 = new IrregularStream<int32_t>();
     Stream<int32_t>* stream1 = new IrregularStream<int32_t>();

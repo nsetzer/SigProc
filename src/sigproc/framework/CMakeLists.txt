@@ -11,6 +11,7 @@ set(src_framework_cpp
     ${FRAMEWORK_PATH}/enum.cpp
     ${FRAMEWORK_PATH}/factory.cpp
     ${FRAMEWORK_PATH}/graph.cpp
+    ${FRAMEWORK_PATH}/graphdef.cpp
     ${FRAMEWORK_PATH}/node.cpp
     ${FRAMEWORK_PATH}/port.cpp
     ${FRAMEWORK_PATH}/processor.cpp
@@ -25,6 +26,7 @@ set(src_framework_hpp
     ${FRAMEWORK_PATH}/enum.hpp
     ${FRAMEWORK_PATH}/factory.hpp
     ${FRAMEWORK_PATH}/graph.hpp
+    ${FRAMEWORK_PATH}/graphdef.hpp
     ${FRAMEWORK_PATH}/node.hpp
     ${FRAMEWORK_PATH}/port.hpp
     ${FRAMEWORK_PATH}/processor.hpp

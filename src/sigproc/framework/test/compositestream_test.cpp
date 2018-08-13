@@ -212,7 +212,7 @@ SIGPROC_TEST(CompositeStreamDecode_error_map_key) {
         decoder.push("{ 123 : 456 }");
         ASSERT_FAIL("expected throw");
     } catch (CompositeStreamException& ex) {
-
+		(void)ex;
     }
 }
 
@@ -227,7 +227,7 @@ SIGPROC_TEST(CompositeStreamDecode_error_empty_set) {
         decoder.push("[ 1, , 3]");
         ASSERT_FAIL("expected throw");
     } catch (CompositeStreamException& ex) {
-
+		(void)ex;
     }
 }
 
