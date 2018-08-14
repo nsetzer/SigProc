@@ -8,6 +8,7 @@ function(create_object_library lib_name)
     #    PROPERTIES
     #        POSITION_INDEPENDENT_CODE 1)
     generate_export_header(${lib_name})
+    target_compile_definitions(${lib_name} PUBLIC SIPROC_EXPORT=1)
 endfunction()
 
 #####################################################
@@ -15,4 +16,5 @@ endfunction()
 function(create_shared_library lib_name)
     add_library(${lib_name} SHARED ${ARGN})
     generate_export_header(${lib_name})
+    target_compile_definitions(${lib_name} PUBLIC SIPROC_EXPORT=1)
 endfunction()

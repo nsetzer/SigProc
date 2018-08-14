@@ -28,6 +28,18 @@ public:
     StreamBase() {}
     virtual ~StreamBase() {}
 
+    // interval specification
+    virtual size_t units() = 0;
+    virtual size_t offset() = 0;
+    virtual size_t period(size_t index) = 0;
+    virtual size_t duration(size_t index) = 0;
+    virtual size_t units_start(size_t index) = 0;
+    virtual size_t units_end(size_t index) = 0;
+
+    virtual void set_units(size_t units) = 0;
+    virtual void set_interval(size_t offset, size_t period, size_t duration) = 0;
+
+
     virtual ElementType elementType() = 0;
     virtual IntervalType intervalType() = 0;
 
@@ -63,14 +75,6 @@ public:
 
     // modifiers
     virtual void push_back(size_t ts, size_t te, ELEMENT_TYPE value) = 0;
-
-    // interval specification
-    virtual size_t units() = 0;
-    virtual size_t offset() = 0;
-    virtual size_t period(size_t index) = 0;
-    virtual size_t duration(size_t index) = 0;
-    virtual size_t units_start(size_t index) = 0;
-    virtual size_t units_end(size_t index) = 0;
 
     virtual void attachPort(Port<ELEMENT_TYPE>* port) = 0;
 
@@ -240,10 +244,20 @@ public:
     virtual ~IrregularElement() {}
 } ;
 
+/**
+ * an Irregular Stream is a stream where the value is does not have
+ * any kind of consistent time component, and as such each value element
+ * carries the start and end time with it.
+ *
+ * for example, an annotation, or if the start and end are equal, a point
+ * in time where some even occurred, a local min or max peak.
+ */
 template<typename ELEMENT_TYPE>
 class IrregularStream : public Stream<ELEMENT_TYPE>
 {
     StreamImpl<IrregularElement<ELEMENT_TYPE>> m_impl;
+    // units: frequency. the base number of samples per second from which
+    //        all time is derived
     size_t m_units = 0;
 
 public:
@@ -307,21 +321,46 @@ public:
         return element.te;
     }
 
+    virtual void set_units(size_t units) {
+        m_units = units;
+    }
+
+    virtual void set_interval(size_t offset, size_t period, size_t duration) {
+        // no-op, irregular streams have no offset, period, or duration
+    }
+
     virtual size_t calculate_depth() final {
         Node::m_depth = m_impl.calculate_depth();
         return Node::m_depth;
     }
 };
 
+
+/**
+ * a Regular Stream is a stream where the value is some
+ * instantaneous value at a point in time
+ *
+ * for example, an individual audio sample, or an single MFCC frame
+ */
 template<typename ELEMENT_TYPE>
 class RegularStream : public Stream<ELEMENT_TYPE>
 {
     StreamImpl<ELEMENT_TYPE> m_impl;
 
+protected:
+    // units: frequency. the base number of samples per second from which
+    //        all time is derived
     size_t m_units = 0;
+    // offset: an offset (from 0) from which time is derived
     size_t m_offset = 0;
+    // period: the number of
     size_t m_period = 0;
     size_t m_duration = 0;
+    // 8kHz audio can be described by:
+    //    8000 units, 0 offset, 1 period, 1 duration
+    // derived features, such as MFCCs generated every 16 ms using
+    //    frames that are 40 ms wide are then described as:
+    //    8000 units, 0 offset, 128 period, 320 duration
 
 public:
     RegularStream()
@@ -355,7 +394,6 @@ public:
 
     virtual void close() {
         m_impl.close();
-
     }
 
     virtual size_t units() {
@@ -382,10 +420,43 @@ public:
         return m_offset + (index * m_period) + m_duration;
     }
 
+    virtual void set_units(size_t units) {
+        m_units = units;
+    }
+
+    virtual void set_interval(size_t offset, size_t period, size_t duration) {
+        m_offset = offset;
+        m_period = period;
+        m_duration = duration;
+    }
+
     virtual size_t calculate_depth() final {
         Node::m_depth = m_impl.calculate_depth();
         return Node::m_depth;
     }
+};
+
+
+/**
+ * a Moving Stream is a Regular stream where the value represents
+ * an aggregation over the duration of input
+ *
+ * for example, the RMS average signal intensity at any point in time
+ */
+template<typename ELEMENT_TYPE>
+class MovingStream : public RegularStream<ELEMENT_TYPE>
+{
+
+public:
+    MovingStream()
+        : RegularStream<ELEMENT_TYPE>()
+    {}
+    virtual ~MovingStream() {}
+
+    virtual size_t units_start(size_t index) {
+        return this->m_offset;
+    }
+
 };
 
 

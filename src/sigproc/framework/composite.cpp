@@ -219,7 +219,7 @@ std::ostream& operator << (std::ostream& os, const Composite& obj)
             if (obj.m_value.str != nullptr) {
                 quote(os, obj.m_value.str);
             } else {
-                os << "\"\"";
+                os << "null";
             }
             break;
         case CompositeDataType::SEQ:
@@ -253,7 +253,7 @@ std::ostream& operator << (std::ostream& os, const Composite& obj)
                 quote(os, kv.first);
                 os << ": ";
                 if (!kv.second) {
-                    os << "null";
+                    os << "\"\"";
                 } else {
                     os << *kv.second;
                 }
@@ -262,7 +262,7 @@ std::ostream& operator << (std::ostream& os, const Composite& obj)
             os << "}";
             break;
         default:
-            os << "null";
+            SIGPROC_THROW("invalid type" << Val(obj.m_type));
             break;
     }
 

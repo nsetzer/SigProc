@@ -15,21 +15,23 @@
 namespace sigproc {
     namespace framework {
 
+typedef std::map<std::string, std::function<Processor*()>> ProcessorRegistryMap;
+
 class ProcessorRegistry
 {
 public:
     ProcessorRegistry() {}
     ~ProcessorRegistry() {}
 
-    static std::map<std::string, std::function<Processor*()>>* processor_registry;
-
     static void reg(const std::string& name, std::function<Processor*()> fptr);
     static void reg(const std::string& name, const std::string& element, std::function<Processor*()> fptr);
     static void reg(const std::string& name, const std::string& element, const std::string& stream, std::function<Processor*()> fptr);
 
+    static ProcessorRegistryMap* registry();
+
 };
 
-#define REGISTER_BEGIN_IMPL(x) struct x{x(){
+#define REGISTER_BEGIN_IMPL(regcls) struct regcls{regcls(){
 
 #define REGISTER_END_IMPL(regcls) }}; regcls regcls ## _i;
 

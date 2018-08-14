@@ -103,6 +103,9 @@ SIGPROC_TEST(CompositeDecode_compact_map) {
 SIGPROC_TEST(CompositeDecode_token) {
 
     {
+        // the token `true` is interpretted as int64_t:1
+        // but there is no support for boolean values
+        // in Composite types
         CompositeStream decoder;
         decoder.push("true");
         decoder.close();
@@ -115,6 +118,9 @@ SIGPROC_TEST(CompositeDecode_token) {
     }
 
     {
+        // the token `false` is interpretted as int64_t:0
+        // but there is no support for boolean values
+        // in Composite types
         CompositeStream decoder;
         decoder.push("false");
         decoder.close();
@@ -127,6 +133,8 @@ SIGPROC_TEST(CompositeDecode_token) {
     }
 
     {
+        // the token `null` is interpretted as a nullptr string
+        // this enables round trip encode/decode of `null`
         CompositeStream decoder;
         decoder.push("null");
         decoder.close();
@@ -134,8 +142,7 @@ SIGPROC_TEST(CompositeDecode_token) {
         ASSERT_EQUAL(CompositeDataType::STRING, decoder.root()->type());
         char** s=nullptr;
         decoder.root()->value<char*>(&s);
-        const char* e = "";
-        ASSERT_STR_EQUAL(e, *s);
+        ASSERT_NULL(*s);
     }
 }
 

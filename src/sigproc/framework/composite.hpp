@@ -124,7 +124,7 @@ public:
             m_type = CompositeDataType::FLOAT64;
             m_value.f64 = data;
         }
-    Composite(char* data)  {
+    Composite(const char* data)  {
             m_type = CompositeDataType::STRING;
             if (data != nullptr) {
                 _copy_str(data);

@@ -6,29 +6,13 @@
 #include "sigproc/framework/stream.hpp"
 #include "sigproc/framework/port.hpp"
 #include "sigproc/framework/processor.hpp"
+#include "sigproc/framework/registry.hpp"
 #include "sigproc/framework/factory.hpp"
 #include "sigproc/framework/graph.hpp"
 #include "sigproc/nodes/adder.hpp"
 
 using namespace sigproc::framework;
-/*
-template<typename T>
-Processor* create_graph(Stream<T>* stream0, Stream<T>* stream1)
-{
-    ProcessorFactory factory(&ProcessorRegistry::processor_registry);
 
-    Processor* proc = factory.create("Adder<INT32,Irregular>");
-
-    StreamBase* stream2 = proc->getStream("OUTPUT");
-    PortBase* port0 = proc->getPort("INPUT0");
-    PortBase* port1 = proc->getPort("INPUT1");
-
-    Graph::link(stream0, port0);
-    Graph::link(stream1, port1);
-
-    return proc;
-}
-*/
 SIGPROC_TEST(Adder_Irregular_Int32) {
 
     Graph graph;
@@ -52,6 +36,12 @@ SIGPROC_TEST(Adder_Irregular_Int32) {
 
     Graph::link(stream0, port0);
     Graph::link(stream1, port1);
+
+    stream0->set_units(8000);
+    stream1->set_units(8000);
+    stream2->set_units(8000);
+
+    proc->set_parameter("operator", "ADD");
 
     stream0->push_back(0, 1, 1);
     stream0->push_back(1, 2, 2);

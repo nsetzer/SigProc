@@ -150,16 +150,16 @@ void CompositeStream::_decode()
 {
     size_t index = m_index - m_cursor;
     size_t offset = m_offset - m_cursor;
-	CompositeStreamState saved_state = CompositeStreamState::UNKNOWN;
-	CompositeStreamState saved_meta_state = CompositeStreamState::UNKNOWN;
+	//CompositeStreamState saved_state = CompositeStreamState::UNKNOWN;
+	//CompositeStreamState saved_meta_state = CompositeStreamState::UNKNOWN;
     //size_t saved_index = index;
     //size_t saved_offset = offset;
 
     while (index < m_stream.size()) {
         char c = m_stream.at(index);
 
-        saved_state = m_state;
-        saved_meta_state = saved_meta_state;
+        //saved_state = m_state;
+        //saved_meta_state = saved_meta_state;
         std::string str_state = std::string(m_stream.begin(),m_stream.end());
         size_t saved_index = index;
         switch (m_state) {
@@ -465,12 +465,18 @@ void CompositeStream::_push_scalar(CompositeDataType type, const std::string& st
     CompositeMap* map = nullptr;
 
     if (m_root == nullptr) {
-        m_root = parse(str);
+        if (type == CompositeDataType::STRING) {
+            m_root = new Composite(str);
+        } else if (type == CompositeDataType::UNKNOWN) {
+            m_root = new Composite(static_cast<char*>(nullptr));
+        } else {
+            m_root = parse(str);
+        }
     } else {
         switch (m_meta_state) {
             case CompositeStreamState::MAPKEY:
 
-                if (type == CompositeDataType::INT64) {
+                if (type != CompositeDataType::STRING) {
                     COMPOSITE_EXCEPTION("map keys must be strings" << Val(type) << Val(str));
                 }
                 m_mapkey = new Composite(str);
@@ -483,10 +489,12 @@ void CompositeStream::_push_scalar(CompositeDataType type, const std::string& st
                 m_mapkey->value<char*>(&key);
                 // ---------------------------------------------------
                 //std::cout << "{} " << *key << ":" << str << std::endl;
-                if (type != CompositeDataType::STRING) {
-                    ptr = parse(str);
-                } else {
+                if (type == CompositeDataType::STRING) {
                     ptr = new Composite(str);
+                } else if (type == CompositeDataType::UNKNOWN) {
+                    ptr = new Composite(static_cast<char*>(nullptr));
+                } else {
+                    ptr = parse(str);
                 }
                 (*map)[*key] = std::unique_ptr<Composite>(ptr);
                 delete m_mapkey;
@@ -499,10 +507,12 @@ void CompositeStream::_push_scalar(CompositeDataType type, const std::string& st
                 current->value<CompositeVector>(&vec);
                 // ---------------------------------------------------
                 //std::cout << "[] " << str << std::endl;
-                if (type != CompositeDataType::STRING) {
-                    ptr = parse(str);
-                } else {
+                if (type == CompositeDataType::STRING) {
                     ptr = new Composite(str);
+                } else if (type == CompositeDataType::UNKNOWN) {
+                    ptr = new Composite(static_cast<char*>(nullptr));
+                } else {
+                    ptr = parse(str);
                 }
                 vec->push_back(std::unique_ptr<Composite>(ptr));
                 break;
@@ -516,7 +526,7 @@ void CompositeStream::_push_scalar(CompositeDataType type, const std::string& st
 void CompositeStream::_push_token(const std::string& str)
 {
     if (str == "null") {
-        _push_scalar(CompositeDataType::STRING, "");
+        _push_scalar(CompositeDataType::UNKNOWN, "");
     } else if (str == "true") {
         _push_scalar(CompositeDataType::INT64, "1");
     } else if (str == "false") {

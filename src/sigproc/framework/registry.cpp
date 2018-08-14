@@ -4,27 +4,28 @@
 namespace sigproc {
     namespace framework {
 
-
-std::map<std::string, std::function<Processor*()>>* ProcessorRegistry::processor_registry = nullptr;
+namespace {
+    ProcessorRegistryMap* processor_registry;
+}
 
 void ProcessorRegistry::reg(const std::string& name, std::function<Processor*()> fptr) {
-    if (ProcessorRegistry::processor_registry == nullptr) {
-        ProcessorRegistry::processor_registry = new std::map<std::string, std::function<Processor*()>>();
+    if (processor_registry == nullptr) {
+        processor_registry = new ProcessorRegistryMap();
     }
     (*processor_registry)[name] = fptr;
 }
 
 void ProcessorRegistry::reg(const std::string& name, const std::string& element, std::function<Processor*()> fptr) {
-    if (ProcessorRegistry::processor_registry == nullptr) {
-        ProcessorRegistry::processor_registry = new std::map<std::string, std::function<Processor*()>>();
+    if (processor_registry == nullptr) {
+        processor_registry = new ProcessorRegistryMap();
     }
     std::string type_name = name + "<" + element + ">";
     (*processor_registry)[type_name] = fptr;
 }
 
 void ProcessorRegistry::reg(const std::string& name, const std::string& element, const std::string& stream, std::function<Processor*()> fptr) {
-    if (ProcessorRegistry::processor_registry == nullptr) {
-        ProcessorRegistry::processor_registry = new std::map<std::string, std::function<Processor*()>>();
+    if (processor_registry == nullptr) {
+        processor_registry = new ProcessorRegistryMap();
     }
     std::string stream_name(stream);
     size_t index = stream_name.find("Stream");
@@ -33,6 +34,10 @@ void ProcessorRegistry::reg(const std::string& name, const std::string& element,
     }
     std::string type_name = name + "<" + element + "," + stream_name + ">";
     (*processor_registry)[type_name] = fptr;
+}
+
+ProcessorRegistryMap* ProcessorRegistry::registry() {
+    return processor_registry;
 }
 
     }

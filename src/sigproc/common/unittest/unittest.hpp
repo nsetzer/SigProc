@@ -22,7 +22,7 @@ public:
     {}
     ~UnitTest() {}
 
-    virtual void run() { std::cout << "doh" << std::endl; };
+    virtual void run() = 0;
 
     const std::string& name() { return m_name; }
 };
