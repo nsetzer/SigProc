@@ -26,6 +26,14 @@ class Composite;
 typedef std::vector<std::unique_ptr<Composite>> CompositeVector;
 typedef std::map<std::string, std::unique_ptr<Composite>> CompositeMap;
 
+
+// todo: allow booleans as int8_t
+//       allow automatic promotion to larger integer or float types
+//       allow bool to be promoted to any integer type
+//       allow demotion of any integer to a bool
+//       allow demotion of a string to a bool (null: false otherwise true)
+//       are empty strings, seqs, or maps also false?
+
 union CompositeDataValue
 {
     int8_t      i8;
@@ -84,6 +92,10 @@ public:
         }
     }
 
+    Composite(bool data) {
+            m_type = CompositeDataType::BOOL;
+            m_value.i8 = data;
+        }
     Composite(int8_t data) {
             m_type = CompositeDataType::INT8;
             m_value.i8 = data;
@@ -260,6 +272,15 @@ public:
     // mix of compile and runtime type checking
     // for accessing the underlying value of the payload
     template<typename T> T* value(T** p);
+
+    // basic type conversions
+    bool as_bool();
+    int64_t as_int();
+    uint64_t as_uint();
+    double as_float();
+    std::string as_string();
+
+    void print(std::ostream& os, size_t depth, size_t tab_width, bool pretty) const;
 
     friend std::ostream& operator << (std::ostream& os, const Composite& obj);
 

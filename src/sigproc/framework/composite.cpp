@@ -24,6 +24,7 @@ void* Composite::value(CompositeDataType type) {
     }
 
     switch(m_type) {
+        case CompositeDataType::BOOL:
         case CompositeDataType::INT8:
             return &m_value.i8;
         case CompositeDataType::INT16:
@@ -54,6 +55,7 @@ void* Composite::value(CompositeDataType type) {
             return  nullptr;
     }
 }
+
 
 template<typename T>
 T* Composite::value(T** p) {
@@ -109,6 +111,7 @@ T* Composite::value(T** p) {
 }
 */
 
+
 template<>
 int64_t* Composite::value<int64_t>(int64_t** p) {
     int64_t* pValue = nullptr;
@@ -123,6 +126,7 @@ int64_t* Composite::value<int64_t>(int64_t** p) {
     if (p != nullptr) { *p = pValue; }
     return pValue;
 }
+
 
 template<>
 char** Composite::value<char*>(char*** p) {
@@ -171,6 +175,92 @@ CompositeMap* Composite::value<CompositeMap>(CompositeMap** p) {
 }
 
 
+bool Composite::as_bool()
+{
+    switch (m_type) {
+        case CompositeDataType::BOOL:
+        case CompositeDataType::INT8:
+            return m_value.i8;
+        case CompositeDataType::INT16:
+            return m_value.i16;
+        case CompositeDataType::INT32:
+            return m_value.i32;
+        case CompositeDataType::INT64:
+            return m_value.i64;
+        case CompositeDataType::UINT8:
+            return m_value.u8;
+        case CompositeDataType::UINT16:
+            return m_value.u16;
+        case CompositeDataType::UINT32:
+            return m_value.u32;
+        case CompositeDataType::UINT64:
+            return m_value.u64;
+        default:
+            SIGPROC_THROW("Illegal cast to bool from composite. Type is " <<
+                getCompositeDataTypeName(m_type));
+    }
+}
+
+int64_t Composite::as_int()
+{
+    switch (m_type) {
+        case CompositeDataType::BOOL:
+        case CompositeDataType::INT8:
+            return static_cast<int64_t>(m_value.i8);
+        case CompositeDataType::INT16:
+            return static_cast<int64_t>(m_value.i16);
+        case CompositeDataType::INT32:
+            return static_cast<int64_t>(m_value.i32);
+        case CompositeDataType::INT64:
+            return m_value.i64;
+        default:
+            SIGPROC_THROW("Illegal cast to int from composite. Type is " <<
+                getCompositeDataTypeName(m_type));
+    }
+}
+
+uint64_t Composite::as_uint()
+{
+    switch (m_type) {
+        case CompositeDataType::BOOL:
+            return m_value.i8?1:0;
+        case CompositeDataType::UINT8:
+            return static_cast<uint64_t>(m_value.u8);
+        case CompositeDataType::UINT16:
+            return static_cast<uint64_t>(m_value.u16);
+        case CompositeDataType::UINT32:
+            return static_cast<uint64_t>(m_value.u32);
+        case CompositeDataType::UINT64:
+            return m_value.u64;
+        default:
+            SIGPROC_THROW("Illegal cast to unsigned int from composite. Type is " <<
+                getCompositeDataTypeName(m_type));
+    }
+}
+
+double Composite::as_float()
+{
+    switch (m_type) {
+        case CompositeDataType::FLOAT32:
+            return static_cast<double>(m_value.f32);
+        case CompositeDataType::FLOAT64:
+            return m_value.f64;
+        default:
+            SIGPROC_THROW("Illegal cast to double from composite. Type is " <<
+                getCompositeDataTypeName(m_type));
+    }
+}
+std::string Composite::as_string()
+{
+    switch (m_type) {
+        case CompositeDataType::STRING:
+            return m_value.str;
+        default:
+            SIGPROC_THROW("Illegal cast to double from composite. Type is " <<
+                getCompositeDataTypeName(m_type));
+    }
+}
+
 
 std::ostream& operator << (std::ostream& os, const CompositeDataType& obj)
 {
@@ -178,46 +268,47 @@ std::ostream& operator << (std::ostream& os, const CompositeDataType& obj)
    return os;
 }
 
-/**
- * JSON encoder for Composite
- */
-std::ostream& operator << (std::ostream& os, const Composite& obj)
+void Composite::print(std::ostream& os, size_t depth, size_t tab_width, bool pretty) const
 {
     bool first = true; // used to control pretty printing
-    switch(obj.m_type) {
+    int ws;
+    switch(m_type) {
+        case CompositeDataType::BOOL:
+            os << ((m_value.i8)?"true":"false");
+            break;
         case CompositeDataType::INT8:
-            os << obj.m_value.i8;
+            os << m_value.i8;
             break;
         case CompositeDataType::INT16:
-            os << obj.m_value.i16;
+            os << m_value.i16;
             break;
         case CompositeDataType::INT32:
-            os << obj.m_value.i32;
+            os << m_value.i32;
             break;
         case CompositeDataType::INT64:
-            os << obj.m_value.i64;
+            os << m_value.i64;
             break;
         case CompositeDataType::UINT8:
-            os << obj.m_value.u8;
+            os << m_value.u8;
             break;
         case CompositeDataType::UINT16:
-            os << obj.m_value.u16;
+            os << m_value.u16;
             break;
         case CompositeDataType::UINT32:
-            os << obj.m_value.u32;
+            os << m_value.u32;
             break;
         case CompositeDataType::UINT64:
-            os << obj.m_value.u64;
+            os << m_value.u64;
             break;
         case CompositeDataType::FLOAT32:
-            os << obj.m_value.f32;
+            os << m_value.f32;
             break;
         case CompositeDataType::FLOAT64:
-            os << obj.m_value.f64;
+            os << m_value.f64;
             break;
         case CompositeDataType::STRING:
-            if (obj.m_value.str != nullptr) {
-                quote(os, obj.m_value.str);
+            if (m_value.str != nullptr) {
+                quote(os, m_value.str);
             } else {
                 os << "null";
             }
@@ -226,46 +317,86 @@ std::ostream& operator << (std::ostream& os, const Composite& obj)
             // serialize a vector as json
             // no comma after the final value
             os << "[";
-            for (const auto& p : *obj.m_value.vec) {
+            if (pretty && m_value.map->size()>0) {
+                os << std::endl;
+                for (ws=0; ws < (1+depth)*(tab_width); ws++) { os << " "; }
+            }
+            for (const auto& p : *m_value.vec) {
 
                 if (first==false) {
                     os << ", ";
+                    if (pretty) {
+                       os << std::endl;
+                       for (ws=0; ws < (1+depth)*(tab_width); ws++) { os << " "; }
+                    }
                 }
 
                 if (!p) {
                     os << "null";
                 } else {
-                    os << *p;
+                    p->print(os, depth+1, tab_width, pretty);
                 }
 
                 first = false;
             }
+            if (pretty && m_value.vec->size()>0) {
+                os << std::endl;
+                for (ws=0; ws < depth*tab_width; ws++) { os << " "; }
+            }
             os << "]";
+            //if (pretty) {
+            //    os << std::endl;
+            //    for (ws=0; ws < depth*tab_width; ws++) { os << " "; }
+            //}
             break;
         case CompositeDataType::MAP:
             // serialize a map as json
             // no comma after the final value
             os << "{";
-            for (const auto& kv : *obj.m_value.map) {
+            if (pretty && m_value.map->size()>0) {
+                os << std::endl;
+                for (ws=0; ws < (1+depth)*(tab_width); ws++) { os << " "; }
+            }
+            for (const auto& kv : *m_value.map) {
                 if (first==false) {
                     os << ", ";
+                    if (pretty) {
+                       os << std::endl;
+                       for (ws=0; ws < (1+depth)*(tab_width); ws++) { os << " "; }
+                    }
                 }
                 quote(os, kv.first);
                 os << ": ";
                 if (!kv.second) {
-                    os << "\"\"";
+                    os << "null";
                 } else {
-                    os << *kv.second;
+                    kv.second->print(os, depth+1, tab_width, pretty);
                 }
                 first = false;
             }
+            if (pretty && m_value.map->size()>0) {
+                os << std::endl;
+                for (ws=0; ws < depth*tab_width; ws++) { os << " "; }
+            }
             os << "}";
+            //if (pretty) {
+            //    os << std::endl;
+            //    for (ws=0; ws < depth*tab_width; ws++) { os << " "; }
+            //}
             break;
         default:
-            SIGPROC_THROW("invalid type" << Val(obj.m_type));
+            SIGPROC_THROW("invalid type" << Val(m_type));
             break;
     }
 
+}
+
+/**
+ * JSON encoder for Composite
+ */
+std::ostream& operator << (std::ostream& os, const Composite& obj)
+{
+    obj.print(os, 0, 0, false);
     return os;
 }
 

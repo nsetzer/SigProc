@@ -14,16 +14,38 @@ int main(int argc, char* argv[]) {
     std::istream* fin = &std::cin;
     std::ostream* fout = &std::cout;
 
-    if (argc > 1 && std::string(argv[1]) != "-") {
+    bool diag = false;
+    bool pretty = false;
+
+    std::vector<std::string> args;
+    for (int i=0; i<argc; i++) {
+        args.push_back(argv[i]);
+    }
+
+    while (args.size() > 1 && args[1].size() == 2) {
+        // enable json pretty printing
+        if (args[1] == "-v") {
+            pretty = true;
+            args.erase(args.begin()+1);
+        // enable decoder diagnostics
+        } else if (args[1] == "-d") {
+            diag = true;
+            args.erase(args.begin()+1);
+        } else {
+            break;
+        }
+    }
+
+    if (args.size() > 1 && args[1] != "-") {
         fin = new std::ifstream(argv[1]);
     }
 
-    if (argc > 2 && std::string(argv[2]) != "-") {
+    if (args.size() > 1 && args[1] != "-") {
         fout = new std::ofstream(argv[2]);
     }
 
     try {
-        CompositeStream stream;
+        CompositeStream stream(diag);
 
         // read from the input file and push the bytes into the
         // composite stream, building a composite object
@@ -37,7 +59,8 @@ int main(int argc, char* argv[]) {
         // if no exceptions were thrown, serialize the composite
         // object back to json
         if (stream.root() != nullptr) {
-            (*fout) << *stream.root() << std::endl;
+            //(*fout) << *stream.root() << std::endl;
+            stream.root()->print(*fout, 0, 2, pretty);
         } else {
             std::cerr << "no root object decoded" << std::endl;
         }

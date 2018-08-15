@@ -24,6 +24,12 @@ template<> CompositeDataType getCompositeDataType<double>() { return CompositeDa
 
 template<> CompositeDataType getCompositeDataType<std::string>() { return CompositeDataType::STRING; }
 
+template<> CompositeDataType getCompositeDataType<bool>() { return CompositeDataType::BOOL; }
+
+template<> CompositeDataType getCompositeDataType<std::vector<std::unique_ptr<Composite>>>() { return CompositeDataType::SEQ; }
+template<> CompositeDataType getCompositeDataType<std::map<std::string, std::unique_ptr<Composite>>>() { return CompositeDataType::MAP; }
+
+
 
 template<typename T> ElementType getElementType() { return ElementType::UNKNOWN; }
 
@@ -92,6 +98,8 @@ const char* getCompositeDataTypeName(const CompositeDataType& type) {
             return "FLOAT64";
         case CompositeDataType::STRING:
             return "STRING";
+        case CompositeDataType::BOOL:
+            return "BOOL";
         case CompositeDataType::SEQ:
             return "SEQ";
         case CompositeDataType::MAP:

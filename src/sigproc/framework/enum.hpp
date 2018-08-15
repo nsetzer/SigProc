@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <map>
 #include <iostream>
 
 namespace sigproc {
@@ -37,8 +38,9 @@ enum class CompositeDataType : char {
     FLOAT32 = 9,
     FLOAT64 = 10,
     STRING  = 11,
-    SEQ     = 12,
-    MAP     = 13
+    BOOL    = 12,
+    SEQ     = 13,
+    MAP     = 14
 };
 
 enum class ElementType: char {
@@ -99,6 +101,11 @@ template<> CompositeDataType getCompositeDataType<uint64_t>();
 template<> CompositeDataType getCompositeDataType<float>();
 template<> CompositeDataType getCompositeDataType<double>();
 template<> CompositeDataType getCompositeDataType<std::string>();
+template<> CompositeDataType getCompositeDataType<bool>();
+class Composite;
+template<> CompositeDataType getCompositeDataType<std::vector<std::unique_ptr<Composite>>>();
+template<> CompositeDataType getCompositeDataType<std::map<std::string, std::unique_ptr<Composite>>>();
+
 
 template<typename T> ElementType getElementType();
 template<> ElementType getElementType<int8_t>();

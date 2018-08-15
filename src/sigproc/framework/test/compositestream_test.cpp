@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 
+#include "sigproc/framework/enum.hpp"
 #include "sigproc/common/unittest/unittest.hpp"
 #include "sigproc/framework/compositestream.hpp"
 

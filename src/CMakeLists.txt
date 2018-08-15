@@ -21,10 +21,10 @@ else()
 
 set(CMAKE_CXX_FLAGS "-Wall -Wold-style-cast -Werror -fno-rtti -Wno-deprecated-declarations" CACHE INTERNAL "" FORCE)
 if("${CMAKE_BUILD_TYPE}" MATCHES "Coverage")
-  set(CMAKE_CXX_FLAGS "-DDEBUG -Wno-error=unused-but-set-variable ${CMAKE_CXX_FLAGS}" CACHE INTERNAL "" FORCE)
+  set(CMAKE_CXX_FLAGS "-DDEBUG ${CMAKE_CXX_FLAGS}" CACHE INTERNAL "" FORCE)
   include(CMakeCover)
 elseif("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
-  set(CMAKE_CXX_FLAGS "-DDEBUG -Wno-error=unused-but-set-variable ${CMAKE_CXX_FLAGS}" CACHE INTERNAL "" FORCE)
+  set(CMAKE_CXX_FLAGS "-DDEBUG  ${CMAKE_CXX_FLAGS}" CACHE INTERNAL "" FORCE)
 endif()
 
 endif()
@@ -32,6 +32,8 @@ endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "-Qunused-arguments ${CMAKE_CXX_FLAGS}" CACHE INTERNAL "" FORCE)
+else()
+    set(CMAKE_CXX_FLAGS "-Wno-error=unused-but-set-variable ${CMAKE_CXX_FLAGS}" CACHE INTERNAL "" FORCE)
 endif()
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)

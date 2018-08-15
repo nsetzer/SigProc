@@ -47,7 +47,8 @@ public:
     virtual void set_parameter(const std::string& param, const Composite& value) {};
 
     virtual std::map<std::string, Composite> get_parameters() const {
-        return std::move(std::map<std::string, Composite>());
+        std::map<std::string, Composite> params;
+        return params;
     }
 
 private:

@@ -150,17 +150,17 @@ void CompositeStream::_decode()
 {
     size_t index = m_index - m_cursor;
     size_t offset = m_offset - m_cursor;
-	//CompositeStreamState saved_state = CompositeStreamState::UNKNOWN;
-	//CompositeStreamState saved_meta_state = CompositeStreamState::UNKNOWN;
+    CompositeStreamState saved_state = CompositeStreamState::UNKNOWN;
+    CompositeStreamState saved_meta_state = CompositeStreamState::UNKNOWN;
     //size_t saved_index = index;
     //size_t saved_offset = offset;
 
     while (index < m_stream.size()) {
         char c = m_stream.at(index);
 
-        //saved_state = m_state;
-        //saved_meta_state = saved_meta_state;
-        std::string str_state = std::string(m_stream.begin(),m_stream.end());
+        saved_state = m_state;
+        saved_meta_state = m_meta_state;
+        //std::string str_state = std::string(m_stream.begin(),m_stream.end());
         size_t saved_index = index;
         switch (m_state) {
             case CompositeStreamState::UNKNOWN:
@@ -201,11 +201,11 @@ void CompositeStream::_decode()
             } else {
                 std::cout << " " << c << "  ";
             }
-            /*std::cout << saved_state << "/"
+            std::cout << saved_state << "/"
                       << saved_meta_state << " "
                       << m_state << "/"
-                      << m_meta_state << " " << str_state << std::endl;
-			*/
+                      << m_meta_state << std::endl;
+
         }
 
         index++;
@@ -467,6 +467,8 @@ void CompositeStream::_push_scalar(CompositeDataType type, const std::string& st
     if (m_root == nullptr) {
         if (type == CompositeDataType::STRING) {
             m_root = new Composite(str);
+        } else if (type == CompositeDataType::BOOL) {
+            m_root = new Composite((str=="1")?true:false);
         } else if (type == CompositeDataType::UNKNOWN) {
             m_root = new Composite(static_cast<char*>(nullptr));
         } else {
@@ -479,6 +481,7 @@ void CompositeStream::_push_scalar(CompositeDataType type, const std::string& st
                 if (type != CompositeDataType::STRING) {
                     COMPOSITE_EXCEPTION("map keys must be strings" << Val(type) << Val(str));
                 }
+
                 m_mapkey = new Composite(str);
                 break;
             case CompositeStreamState::MAPVAL:
@@ -491,6 +494,8 @@ void CompositeStream::_push_scalar(CompositeDataType type, const std::string& st
                 //std::cout << "{} " << *key << ":" << str << std::endl;
                 if (type == CompositeDataType::STRING) {
                     ptr = new Composite(str);
+                } else if (type == CompositeDataType::BOOL) {
+                    ptr = new Composite((str=="1")?true:false);
                 } else if (type == CompositeDataType::UNKNOWN) {
                     ptr = new Composite(static_cast<char*>(nullptr));
                 } else {
@@ -509,6 +514,8 @@ void CompositeStream::_push_scalar(CompositeDataType type, const std::string& st
                 //std::cout << "[] " << str << std::endl;
                 if (type == CompositeDataType::STRING) {
                     ptr = new Composite(str);
+                } else if (type == CompositeDataType::BOOL) {
+                    ptr = new Composite((str=="1")?true:false);
                 } else if (type == CompositeDataType::UNKNOWN) {
                     ptr = new Composite(static_cast<char*>(nullptr));
                 } else {
@@ -528,9 +535,9 @@ void CompositeStream::_push_token(const std::string& str)
     if (str == "null") {
         _push_scalar(CompositeDataType::UNKNOWN, "");
     } else if (str == "true") {
-        _push_scalar(CompositeDataType::INT64, "1");
+        _push_scalar(CompositeDataType::BOOL, "1");
     } else if (str == "false") {
-        _push_scalar(CompositeDataType::INT64, "0");
+        _push_scalar(CompositeDataType::BOOL, "0");
     } else {
         _push_scalar(CompositeDataType::STRING, str);
     }
@@ -644,6 +651,8 @@ void CompositeStream::_pop_collection()
     } else {
         m_meta_state = CompositeStreamState::UNKNOWN;
     }
+
+    m_seq_pushed = false;
 }
 
         } // framework
