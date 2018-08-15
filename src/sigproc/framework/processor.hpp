@@ -17,6 +17,10 @@ namespace sigproc {
 class StreamBase;
 class PortBase;
 
+typedef std::map<std::string, Composite> ParamDef;
+typedef std::map<std::string, InputConfigType> PortDef;
+typedef std::map<std::string, OutputConfigType> StreamDef;
+
 class Processor : public Node
 {
 
@@ -49,6 +53,13 @@ public:
     virtual std::map<std::string, Composite> get_parameters() const {
         return std::move(std::map<std::string, Composite>());
     }
+
+    // these must be implemented for the configuration layer to be able to
+    // validate a node is properly connected
+    virtual ParamDef parameters() const = 0;
+    // TODO: the port def and stream def should return the TYPE of the stream/port
+    virtual PortDef ports() const = 0;
+    virtual StreamDef streams() const = 0;
 
 private:
 
