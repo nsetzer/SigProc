@@ -8,6 +8,20 @@ namespace sigproc {
 
 using namespace sigproc::framework;
 
+namespace binaryoperator {
+
+    enum class Operation: char {
+        UNKNOWN = 0,
+        ADD = 1,
+        SUBTRACT = 2,
+        MULTIPLY = 3,
+        DIVIDE = 4,
+    };
+
+    std::string getOperationTypeName(Operation type);
+    Operation getOperationFromString(const std::string& str);
+}
+
 template<typename ELEMENT_TYPE, typename STREAM_TYPE>
 class Adder : public Processor
 {
@@ -21,6 +35,8 @@ public:
     STREAM_TYPE m_output;
     Port<ELEMENT_TYPE> m_input0;
     Port<ELEMENT_TYPE> m_input1;
+
+    binaryoperator::Operation m_operation;
 
     virtual void open() {}
 
@@ -48,26 +64,6 @@ public:
 
     }
 
-/*
-    virtual void attach_port(const std::string& name, PortBase* port) {
-        if (name == "INPUT0") {
-            m_input0 = port->cast<ELEMENT_TYPE>(getElementType<ELEMENT_TYPE>());
-        } else if (name == "INPUT1") {
-            m_input1 = port->cast<ELEMENT_TYPE>(getElementType<ELEMENT_TYPE>());
-        } else {
-            throw std::runtime_error("");
-        }
-    }
-
-    virtual void attach_stream(const std::string& name, StreamBase* stream) {
-        if (name == "OUTPUT") {
-            m_output = stream->cast<ELEMENT_TYPE>(getElementType<ELEMENT_TYPE>());
-        } else {
-            throw std::runtime_error("");
-        }
-    }
-*/
-
     virtual PortBase* create_port(const std::string& name) {
         if (name == "INPUT0") {
             return &m_input0;
@@ -85,6 +81,40 @@ public:
 
         return &m_output;
     }
+
+    virtual void set_parameter(const std::string& param, const Composite& value) {
+        if (param == "operator") {
+            // TODO: add a asString option to composites
+            m_operation = binaryoperator::Operation::ADD;
+        }
+    };
+
+
+    virtual ParamDef parameters() const {
+        ParamDef def;
+
+        def["operator"] = "ADD";
+
+        return def;
+    }
+
+    virtual PortDef ports() const {
+        PortDef def;
+
+        def["INPUT0"] = InputConfigType::PORT;
+        def["INPUT1"] = InputConfigType::PORT;
+
+        return def;
+    }
+
+    virtual StreamDef streams() const {
+        StreamDef def;
+
+        def["OUTPUT"] = OutputConfigType::STREAM;
+
+        return def;
+    }
+
 
 
 };
