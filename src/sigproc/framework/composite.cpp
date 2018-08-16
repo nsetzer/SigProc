@@ -175,7 +175,7 @@ CompositeMap* Composite::value<CompositeMap>(CompositeMap** p) {
 }
 
 
-bool Composite::as_bool()
+bool Composite::as_bool() const
 {
     switch (m_type) {
         case CompositeDataType::BOOL:
@@ -201,7 +201,7 @@ bool Composite::as_bool()
     }
 }
 
-int64_t Composite::as_int()
+int64_t Composite::as_int() const
 {
     switch (m_type) {
         case CompositeDataType::BOOL:
@@ -219,7 +219,7 @@ int64_t Composite::as_int()
     }
 }
 
-uint64_t Composite::as_uint()
+uint64_t Composite::as_uint() const
 {
     switch (m_type) {
         case CompositeDataType::BOOL:
@@ -238,7 +238,7 @@ uint64_t Composite::as_uint()
     }
 }
 
-double Composite::as_float()
+double Composite::as_float() const
 {
     switch (m_type) {
         case CompositeDataType::FLOAT32:
@@ -250,13 +250,57 @@ double Composite::as_float()
                 getCompositeDataTypeName(m_type));
     }
 }
-std::string Composite::as_string()
+std::string Composite::as_string() const
 {
     switch (m_type) {
         case CompositeDataType::STRING:
             return m_value.str;
         default:
             SIGPROC_THROW("Illegal cast to double from composite. Type is " <<
+                getCompositeDataTypeName(m_type));
+    }
+}
+
+CompositeVector& Composite::as_vector()
+{
+    switch (m_type) {
+        case CompositeDataType::SEQ:
+            return *m_value.vec;
+        default:
+            SIGPROC_THROW("Illegal cast to vector from composite. Type is " <<
+                getCompositeDataTypeName(m_type));
+    }
+}
+
+CompositeVector& Composite::as_vector() const
+{
+    switch (m_type) {
+        case CompositeDataType::SEQ:
+            return *m_value.vec;
+        default:
+            SIGPROC_THROW("Illegal cast to vector from composite. Type is " <<
+                getCompositeDataTypeName(m_type));
+    }
+}
+
+CompositeMap& Composite::as_map()
+{
+    switch (m_type) {
+        case CompositeDataType::MAP:
+            return *m_value.map;
+        default:
+            SIGPROC_THROW("Illegal cast to map from composite. Type is " <<
+                getCompositeDataTypeName(m_type));
+    }
+}
+
+CompositeMap& Composite::as_map() const
+{
+    switch (m_type) {
+        case CompositeDataType::MAP:
+            return *m_value.map;
+        default:
+            SIGPROC_THROW("Illegal cast to map from composite. Type is " <<
                 getCompositeDataTypeName(m_type));
     }
 }
@@ -271,7 +315,7 @@ std::ostream& operator << (std::ostream& os, const CompositeDataType& obj)
 void Composite::print(std::ostream& os, size_t depth, size_t tab_width, bool pretty) const
 {
     bool first = true; // used to control pretty printing
-    int ws;
+    size_t ws;
     switch(m_type) {
         case CompositeDataType::BOOL:
             os << ((m_value.i8)?"true":"false");

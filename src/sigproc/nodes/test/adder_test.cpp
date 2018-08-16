@@ -55,7 +55,7 @@ SIGPROC_TEST(Adder_Irregular_Int32) {
     graph.compute();
     graph.close();
 
-    std::cout << "steam 0 size: " << stream0->size() << std::endl;
-    std::cout << "steam 1 size: " << stream1->size() << std::endl;
-    std::cout << "steam 2 size: " << stream2->size() << std::endl;
+    std::cout << "stream 0 size: " << stream0->size() << std::endl;
+    std::cout << "stream 1 size: " << stream1->size() << std::endl;
+    std::cout << "stream 2 size: " << stream2->size() << std::endl;
 }

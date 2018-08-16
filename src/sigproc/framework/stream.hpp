@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <exception>
 
+#include "sigproc/common/exception.hpp"
 #include "sigproc/framework/node.hpp"
 #include "sigproc/framework/port.hpp"
 #include "sigproc/framework/enum.hpp"
@@ -39,7 +40,6 @@ public:
     virtual void set_units(size_t units) = 0;
     virtual void set_interval(size_t offset, size_t period, size_t duration) = 0;
 
-
     virtual ElementType elementType() = 0;
     virtual IntervalType intervalType() = 0;
 
@@ -47,7 +47,7 @@ public:
     Stream<ELEMENT_TYPE>* cast(ElementType  type) {
 
         if (type != elementType()  && type == getElementType<ELEMENT_TYPE>()) {
-            throw std::runtime_error("");
+            SIGPROC_THROW("Invalid Element Type" << type);
         }
 
         return static_cast<Stream<ELEMENT_TYPE>*>(this);

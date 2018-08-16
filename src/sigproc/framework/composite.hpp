@@ -274,11 +274,15 @@ public:
     template<typename T> T* value(T** p);
 
     // basic type conversions
-    bool as_bool();
-    int64_t as_int();
-    uint64_t as_uint();
-    double as_float();
-    std::string as_string();
+    bool as_bool() const;
+    int64_t as_int() const;
+    uint64_t as_uint() const;
+    double as_float() const;
+    std::string as_string() const;
+    CompositeVector& as_vector();
+    CompositeVector& as_vector() const;
+    CompositeMap& as_map();
+    CompositeMap& as_map() const;
 
     void print(std::ostream& os, size_t depth, size_t tab_width, bool pretty) const;
 

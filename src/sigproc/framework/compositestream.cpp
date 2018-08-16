@@ -3,6 +3,7 @@
 #include <iterator>
 #include <algorithm>
 
+#include "sigproc/framework/composite.hpp"
 #include "sigproc/framework/compositestream.hpp"
 #include "sigproc/framework/enum.hpp"
 #include "sigproc/common/exception.hpp"

@@ -3,6 +3,7 @@
 #include "sigproc/framework/composite.hpp"
 
 #include <iostream>
+#include <memory>
 
 namespace sigproc {
     namespace framework {

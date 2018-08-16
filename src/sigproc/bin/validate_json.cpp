@@ -1,18 +1,30 @@
 
 
+#include "sigproc/common/argparse.hpp"
 #include "sigproc/framework/composite.hpp"
 #include "sigproc/framework/compositestream.hpp"
 
 #include <iostream>
 #include <fstream>
 
+using namespace sigproc::common;
 using namespace sigproc::framework;
+
+ArgParseSpec spec = {
+    {"validate_json"},
+    {"verbose", 'v', 0, "enable pretty printing"},
+    {"diag", 'd', 0, "enable diagnostics"},
+    {"in_file", true, "json input (- for stdin)"},
+    {"out_file", true, "json output (- for stdout)"},
+};
 
 int main(int argc, char* argv[]) {
 
     char buffer[1024];
     std::istream* fin = &std::cin;
     std::ostream* fout = &std::cout;
+
+    ArgParser parser(argc, argv, spec);
 
     bool diag = false;
     bool pretty = false;

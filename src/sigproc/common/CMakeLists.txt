@@ -2,10 +2,32 @@
 
 include(sigproc)
 
+set(COMMON_PATH "${PROJECT_SOURCE_DIR}/sigproc/common")
+
+set(src_common_cpp
+    ${COMMON_PATH}/argparse.cpp
+)
+
+set(src_common_hpp
+    ${COMMON_PATH}/argparse.hpp
+    ${COMMON_PATH}/exception.hpp
+)
+
+set(src_unittest_all
+        ${src_common_cpp}
+        ${src_common_hpp}
+    )
+
+create_object_library(SigprocCommon_object
+    ${src_unittest_all})
+# $<TARGET_OBJECTS:SigprocCommon_object>
+
+
 set(UNITTEST_PATH "${PROJECT_SOURCE_DIR}/sigproc/common/unittest")
 
 set(src_unittest_cpp
     ${UNITTEST_PATH}/unittest.cpp
+    ${UNITTEST_PATH}/unittest_main.cpp
 )
 
 set(src_unittest_hpp
@@ -19,7 +41,6 @@ set(src_unittest_all
     )
 
 create_object_library(SigprocUnitTest_object
-    ${src_unittest_all}
-    ${UNITTEST_PATH}/unittest_main.cpp)
+    ${src_unittest_all})
 # $<TARGET_OBJECTS:SigprocUnitTest_object>
 
