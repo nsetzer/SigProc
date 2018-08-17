@@ -3,18 +3,64 @@
 #include "sigproc/framework/composite.hpp"
 #include "sigproc/common/exception.hpp"
 
-namespace {
+
+namespace sigproc {
+    namespace framework {
+
+
+namespace composite {
 
     void quote(std::ostream& os, const std::string& s) {
         // TODO: some symbols should be escaped
         os << "\"" << s << "\"";
     }
 
-} /* anonymous */
+    std::string unquote(const std::string& s) {
+        // TODO: some escape symbols should be handled
+        return s.substr(1, s.size()-2);
+    }
 
+    bool parse_int64(const std::string& s, int64_t* i) {
+        char * p ;
 
-namespace sigproc {
-    namespace framework {
+        if(s.empty() || ((!isdigit(s[0])) && (s[0] != '-') && (s[0] != '+'))) {
+            return false;
+        }
+
+        *i = strtoll(s.c_str(), &p, 10);
+
+        return (*p == 0) ;
+    }
+
+    bool parse_double(const std::string& s, double* d) {
+        char * p ;
+
+        if(s.empty() || ((!isdigit(s[0])) && (s[0] != '-') && (s[0] != '+'))) {
+            return false;
+        }
+
+        *d = strtold(s.c_str(), &p);
+
+        return (*p == 0) ;
+    }
+
+    Composite* parse(const std::string& s) {
+
+        int64_t i;
+        double d;
+        if(parse_int64(s, &i)) {
+            return new Composite(i);
+        }
+
+        if(parse_double(s, &d)) {
+            return new Composite(d);
+        }
+
+        return new Composite(s);
+
+    }
+
+} /* composite */
 
 void* Composite::value(CompositeDataType type) {
 
@@ -352,7 +398,7 @@ void Composite::print(std::ostream& os, size_t depth, size_t tab_width, bool pre
             break;
         case CompositeDataType::STRING:
             if (m_value.str != nullptr) {
-                quote(os, m_value.str);
+                composite::quote(os, m_value.str);
             } else {
                 os << "null";
             }
@@ -409,7 +455,7 @@ void Composite::print(std::ostream& os, size_t depth, size_t tab_width, bool pre
                        for (ws=0; ws < (1+depth)*(tab_width); ws++) { os << " "; }
                     }
                 }
-                quote(os, kv.first);
+                composite::quote(os, kv.first);
                 os << ": ";
                 if (!kv.second) {
                     os << "null";

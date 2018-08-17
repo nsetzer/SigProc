@@ -12,6 +12,7 @@ set(src_framework_cpp
     ${FRAMEWORK_PATH}/factory.cpp
     ${FRAMEWORK_PATH}/graph.cpp
     ${FRAMEWORK_PATH}/graphdef.cpp
+    ${FRAMEWORK_PATH}/lisp.cpp
     ${FRAMEWORK_PATH}/node.cpp
     ${FRAMEWORK_PATH}/port.cpp
     ${FRAMEWORK_PATH}/processor.cpp
@@ -27,6 +28,7 @@ set(src_framework_hpp
     ${FRAMEWORK_PATH}/factory.hpp
     ${FRAMEWORK_PATH}/graph.hpp
     ${FRAMEWORK_PATH}/graphdef.hpp
+    ${FRAMEWORK_PATH}/lisp.hpp
     ${FRAMEWORK_PATH}/node.hpp
     ${FRAMEWORK_PATH}/port.hpp
     ${FRAMEWORK_PATH}/processor.hpp
@@ -63,3 +65,4 @@ endfunction()
 
 create_framework_test(composite_test)
 create_framework_test(compositestream_test)
+create_framework_test(lisp_test)

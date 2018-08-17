@@ -18,21 +18,20 @@
 namespace sigproc {
     namespace framework {
 
-/**
- * CompositeDataValue represents a node in a document
- */
+
 class Composite;
+
+namespace composite {
+    void quote(std::ostream& os, const std::string& s);
+    std::string unquote(const std::string& s);
+    bool parse_int64(const std::string& s, int64_t* i);
+    bool parse_int64(const std::string& s, int64_t* i);
+    bool parse_double(const std::string& s, double* d);
+    Composite* parse(const std::string& s);
+}
 
 typedef std::vector<std::unique_ptr<Composite>> CompositeVector;
 typedef std::map<std::string, std::unique_ptr<Composite>> CompositeMap;
-
-
-// todo: allow booleans as int8_t
-//       allow automatic promotion to larger integer or float types
-//       allow bool to be promoted to any integer type
-//       allow demotion of any integer to a bool
-//       allow demotion of a string to a bool (null: false otherwise true)
-//       are empty strings, seqs, or maps also false?
 
 union CompositeDataValue
 {

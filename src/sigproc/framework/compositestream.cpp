@@ -17,55 +17,6 @@ namespace sigproc {
     throw CompositeStreamException(_ex_ss.str()); \
 } while(0)
 
-namespace {
-
-    std::string unquote(const std::string& s) {
-        // TODO: some escape symbols should be handled
-        return s.substr(1, s.size()-2);
-    }
-
-    bool parse_int64(const std::string& s, int64_t* i) {
-        char * p ;
-
-        if(s.empty() || ((!isdigit(s[0])) && (s[0] != '-') && (s[0] != '+'))) {
-            return false;
-        }
-
-        *i = strtoll(s.c_str(), &p, 10);
-
-        return (*p == 0) ;
-    }
-
-    bool parse_double(const std::string& s, double* d) {
-        char * p ;
-
-        if(s.empty() || ((!isdigit(s[0])) && (s[0] != '-') && (s[0] != '+'))) {
-            return false;
-        }
-
-        *d = strtold(s.c_str(), &p);
-
-        return (*p == 0) ;
-    }
-
-    Composite* parse(const std::string& s) {
-
-        int64_t i;
-        double d;
-        if(parse_int64(s, &i)) {
-            return new Composite(i);
-        }
-
-        if(parse_double(s, &d)) {
-            return new Composite(d);
-        }
-
-        return new Composite(s);
-
-    }
-
-} /* anonymous */
-
 CompositeStream::~CompositeStream()
 {
     if (m_root != nullptr) {
@@ -337,8 +288,6 @@ bool CompositeStream::_decode_number(char c, size_t& index, size_t& offset)
     switch (c) {
 
         //-----------------------------------------------------------------
-        case '+':
-        case '-':
         case '.':
         case '0':
         case '1':
@@ -444,7 +393,7 @@ void CompositeStream::_decode_complete(size_t index, size_t offset)
             _push_scalar(CompositeDataType::INT64, str);
             break;
         case CompositeStreamState::STRING:
-            str = unquote(std::string(m_stream.begin()+offset,m_stream.begin() + index + 1));
+            str = composite::unquote(std::string(m_stream.begin()+offset,m_stream.begin() + index + 1));
             _push_scalar(CompositeDataType::STRING, str);
             break;
         default:
@@ -473,7 +422,7 @@ void CompositeStream::_push_scalar(CompositeDataType type, const std::string& st
         } else if (type == CompositeDataType::UNKNOWN) {
             m_root = new Composite(static_cast<char*>(nullptr));
         } else {
-            m_root = parse(str);
+            m_root = composite::parse(str);
         }
     } else {
         switch (m_meta_state) {
@@ -500,7 +449,7 @@ void CompositeStream::_push_scalar(CompositeDataType type, const std::string& st
                 } else if (type == CompositeDataType::UNKNOWN) {
                     ptr = new Composite(static_cast<char*>(nullptr));
                 } else {
-                    ptr = parse(str);
+                    ptr = composite::parse(str);
                 }
                 (*map)[*key] = std::unique_ptr<Composite>(ptr);
                 delete m_mapkey;
@@ -520,7 +469,7 @@ void CompositeStream::_push_scalar(CompositeDataType type, const std::string& st
                 } else if (type == CompositeDataType::UNKNOWN) {
                     ptr = new Composite(static_cast<char*>(nullptr));
                 } else {
-                    ptr = parse(str);
+                    ptr = composite::parse(str);
                 }
                 vec->push_back(std::unique_ptr<Composite>(ptr));
                 break;

@@ -25,6 +25,8 @@ namespace composite {
         {}
         ~LineInfo() {}
     };
+
+
 }
 
 class CompositeStreamException : public sigproc::common::exception::SigprocException
@@ -85,6 +87,8 @@ private:
 
 class CompositeStream
 {
+
+protected:
     size_t m_index;
     size_t m_offset;
     size_t m_cursor;
@@ -157,14 +161,15 @@ public:
 
     // close the stream and transfer ownership of the pointer to the caller
     Composite* release();
-private:
 
-    void _decode();
-    void _decode_unknown(char c, size_t& index, size_t& offset);
-    bool _decode_number(char c, size_t& index, size_t& offset);
-    bool _decode_string(char c, size_t& index, size_t& offset);
-    bool _decode_token(char c, size_t& index, size_t& offset);
-    void _decode_complete(size_t index, size_t offset);
+protected:
+
+    virtual void _decode();
+    virtual void _decode_unknown(char c, size_t& index, size_t& offset);
+    virtual bool _decode_number(char c, size_t& index, size_t& offset);
+    virtual bool _decode_string(char c, size_t& index, size_t& offset);
+    virtual bool _decode_token(char c, size_t& index, size_t& offset);
+    virtual void _decode_complete(size_t index, size_t offset);
 
     void _push_scalar(CompositeDataType type, const std::string& str);
     void _push_token(const std::string& str);
