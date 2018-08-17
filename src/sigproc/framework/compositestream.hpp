@@ -169,6 +169,7 @@ protected:
     virtual bool _decode_number(char c, size_t& index, size_t& offset);
     virtual bool _decode_string(char c, size_t& index, size_t& offset);
     virtual bool _decode_token(char c, size_t& index, size_t& offset);
+    virtual bool _decode_comment(char c, size_t& index, size_t& offset);
     virtual void _decode_complete(size_t index, size_t offset);
 
     void _push_scalar(CompositeDataType type, const std::string& str);

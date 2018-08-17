@@ -63,6 +63,8 @@ const char* getCompositeStreamStateName(const CompositeStreamState& type) {
             return "NUMBER";
         case CompositeStreamState::STRING:
             return "STRING";
+        case CompositeStreamState::COMMENT:
+            return "COMMENT";
         case CompositeStreamState::SEQVAL:
             return "SEQVAL";
         case CompositeStreamState::MAPKEY:

@@ -20,10 +20,11 @@ enum class CompositeStreamState : char {
     TOKEN   = 1,
     NUMBER  = 2,
     STRING  = 3,
+    COMMENT = 4,
     // meta states
-    SEQVAL  = 4,
-    MAPKEY  = 5,
-    MAPVAL  = 6,
+    SEQVAL  = 5,
+    MAPKEY  = 6,
+    MAPVAL  = 7,
 };
 
 enum class CompositeDataType : char {

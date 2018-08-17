@@ -119,6 +119,13 @@ void CompositeStream::_decode()
                 m_info.offset ++;
                 _decode_unknown(c, index, offset);
                 break;
+            case CompositeStreamState::COMMENT:
+                m_info.offset ++;
+                if (_decode_comment(c, index, offset)) {
+                    offset = index;
+                    m_state = CompositeStreamState::UNKNOWN;
+                }
+                break;
             case CompositeStreamState::NUMBER:
                 if (_decode_number(c, index, offset)) {
                     index -= 1;
@@ -149,9 +156,9 @@ void CompositeStream::_decode()
 
         if (m_diag) {
             if (saved_index == (index+1)) {
-                std::cout << "[" << c << "] ";
+                std::cout << "[" << ((c<' ')?'.':c) << "] ";
             } else {
-                std::cout << " " << c << "  ";
+                std::cout << " " << ((c<' ')?'.':c) << "  ";
             }
             std::cout << saved_state << "/"
                       << saved_meta_state << " "
@@ -182,6 +189,12 @@ void CompositeStream::_decode_unknown(char c, size_t& index, size_t& offset)
 {
 
     switch (c) {
+
+        //-----------------------------------------------------------------
+        case '#':
+            offset = index;
+            m_state = CompositeStreamState::COMMENT;
+            break;
 
         //-----------------------------------------------------------------
         case '"':
@@ -371,6 +384,17 @@ bool CompositeStream::_decode_token(char c, size_t& index, size_t& offset)
 
         case ' ':
         case '\t':
+        case '\n':
+            return true;
+    }
+
+    return false;
+}
+
+bool CompositeStream::_decode_comment(char c, size_t& index, size_t& offset)
+{
+    switch (c) {
+        //-----------------------------------------------------------------
         case '\n':
             return true;
     }

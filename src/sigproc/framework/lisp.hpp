@@ -25,6 +25,11 @@ public:
 
     ~LispStream() {}
 
+
+
+    std::unique_ptr<Composite> eval();
+
+protected:
     virtual void _decode();
     virtual void _decode_unknown(char c, size_t& index, size_t& offset);
     virtual bool _decode_number(char c, size_t& index, size_t& offset);
@@ -33,6 +38,9 @@ public:
     void _push_list();
     void _push_scalar(CompositeDataType type, const std::string& str);
     void _pop_list();
+
+    std::unique_ptr<Composite> eval_r(CompositeVector& vec);
+    std::unique_ptr<Composite> eval_f(CompositeVector& vec);
 
 };
 
