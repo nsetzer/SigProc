@@ -6,11 +6,15 @@ set(COMMON_PATH "${PROJECT_SOURCE_DIR}/sigproc/common")
 
 set(src_common_cpp
     ${COMMON_PATH}/argparse.cpp
+    ${COMMON_PATH}/logging.cpp
+    ${COMMON_PATH}/format.cpp
 )
 
 set(src_common_hpp
     ${COMMON_PATH}/argparse.hpp
     ${COMMON_PATH}/exception.hpp
+    ${COMMON_PATH}/logging.hpp
+    ${COMMON_PATH}/format.hpp
 )
 
 set(src_unittest_all

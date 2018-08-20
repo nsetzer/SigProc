@@ -103,6 +103,7 @@ template<> CompositeDataType getCompositeDataType<uint64_t>();
 template<> CompositeDataType getCompositeDataType<float>();
 template<> CompositeDataType getCompositeDataType<double>();
 template<> CompositeDataType getCompositeDataType<std::string>();
+template<> CompositeDataType getCompositeDataType<char*>();
 template<> CompositeDataType getCompositeDataType<bool>();
 class Composite;
 template<> CompositeDataType getCompositeDataType<std::vector<std::unique_ptr<Composite>>>();

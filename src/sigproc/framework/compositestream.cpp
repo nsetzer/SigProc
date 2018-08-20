@@ -3,10 +3,15 @@
 #include <iterator>
 #include <algorithm>
 
+#include <iomanip>
+
 #include "sigproc/framework/composite.hpp"
 #include "sigproc/framework/compositestream.hpp"
 #include "sigproc/framework/enum.hpp"
 #include "sigproc/common/exception.hpp"
+#include "sigproc/common/format.hpp"
+
+using namespace sigproc::common;
 
 namespace sigproc {
     namespace framework {
@@ -107,13 +112,14 @@ void CompositeStream::_decode()
     //size_t saved_index = index;
     //size_t saved_offset = offset;
 
+    size_t saved_index;
     while (index < m_stream.size()) {
         char c = m_stream.at(index);
 
         saved_state = m_state;
         saved_meta_state = m_meta_state;
-        //std::string str_state = std::string(m_stream.begin(),m_stream.end());
-        size_t saved_index = index;
+
+        saved_index = index;
         switch (m_state) {
             case CompositeStreamState::UNKNOWN:
                 m_info.offset ++;
@@ -122,12 +128,15 @@ void CompositeStream::_decode()
             case CompositeStreamState::COMMENT:
                 m_info.offset ++;
                 if (_decode_comment(c, index, offset)) {
+                    m_info.offset += index-offset-1;
                     offset = index;
                     m_state = CompositeStreamState::UNKNOWN;
+
                 }
                 break;
             case CompositeStreamState::NUMBER:
                 if (_decode_number(c, index, offset)) {
+                    m_info.offset += index-offset-1;
                     index -= 1;
                     _decode_complete(index, offset);
                     offset = index;
@@ -137,6 +146,7 @@ void CompositeStream::_decode()
             case CompositeStreamState::STRING:
                 if (_decode_string(c, index, offset)) {
                     //index -= 1;
+                    m_info.offset += index-offset;
                     _decode_complete(index, offset);
                     offset = index;
                     m_state = CompositeStreamState::UNKNOWN;
@@ -144,6 +154,7 @@ void CompositeStream::_decode()
                 break;
             case CompositeStreamState::TOKEN:
                 if (_decode_token(c, index, offset)) {
+                    m_info.offset += index-offset-1;
                     index -= 1;
                     _decode_complete(index, offset);
                     offset = index;
@@ -154,17 +165,15 @@ void CompositeStream::_decode()
                 break;
         }
 
-        if (m_diag) {
-            if (saved_index == (index+1)) {
-                std::cout << "[" << ((c<' ')?'.':c) << "] ";
-            } else {
-                std::cout << " " << ((c<' ')?'.':c) << "  ";
-            }
-            std::cout << saved_state << "/"
-                      << saved_meta_state << " "
-                      << m_state << "/"
-                      << m_meta_state << std::endl;
 
+
+        if (m_diag && (saved_index != (index+1))) {
+            std::cout << fmt::sprintf(" %C o: %4d i: %4d l: %3d c: %3d ",
+                c, m_cursor+offset, m_cursor+index, m_info.line, m_info.offset);
+
+            std::cout << fmt::sprintf(" %8t/%-8t %8t/%-8t",
+                saved_state, saved_meta_state, m_state, m_meta_state)
+                << std::endl;
         }
 
         index++;
@@ -318,6 +327,7 @@ bool CompositeStream::_decode_number(char c, size_t& index, size_t& offset)
         // skip whitespace
         case ' ':
         case '\t':
+        case '\r':
         case '\n':
             return true;
 
@@ -384,6 +394,7 @@ bool CompositeStream::_decode_token(char c, size_t& index, size_t& offset)
 
         case ' ':
         case '\t':
+        case '\r':
         case '\n':
             return true;
     }
@@ -540,6 +551,7 @@ void CompositeStream::_push_collection(CompositeDataType collection)
     }
 
     m_stack.push_back(new Composite(collection));
+    //std:: cout << fmt::sprintf("%d/%d\n", m_info.line, m_info.offset);
     m_stack_info.push_back(m_info);
 
     if (m_root == nullptr) {

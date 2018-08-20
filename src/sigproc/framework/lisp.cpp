@@ -4,6 +4,7 @@
 #include <map>
 #include <functional>
 
+#include "sigproc/framework/lispexpr.hpp"
 #include "sigproc/framework/lisp.hpp"
 
 namespace sigproc {
@@ -11,90 +12,11 @@ namespace sigproc {
 
 namespace {
 
-typedef std::unique_ptr<Composite> upComposite;
-typedef std::function<upComposite(CompositeVector&)> LispFunction;
-typedef std::map<std::string, LispFunction> LispFunctionMap;
-
-// addition truth table time
-//  v1| v2|res ::  v1| v2|res ::  v1| v2|res ::  v1| v2|res
-// int|int|int :: uns|int|int :: flt|int|flt :: str|int|str
-// int|uns|int :: uns|uns|uns :: flt|uns|flt :: str|uns|str
-// int|flt|flt :: uns|flt|flt :: flt|flt|flt :: str|flt|str
-// int|str|err :: uns|str|err :: flt|str|err :: str|str|str
-// int|seq|err :: uns|seq|err :: flt|seq|err :: str|seq|str
-// int|map|err :: uns|map|err :: flt|map|err :: str|map|str
-
-// subtraction truth table time
-//  v1| v2|res ::  v1| v2|res ::  v1| v2|res ::  v1| v2|res
-// int|int|int :: uns|int|int :: flt|int|flt :: str|int|err
-// int|uns|int :: uns|uns|uns :: flt|uns|flt :: str|uns|err
-// int|flt|flt :: uns|flt|flt :: flt|flt|flt :: str|flt|err
-// int|str|err :: uns|str|err :: flt|str|err :: str|str|err
-// int|seq|err :: uns|seq|err :: flt|seq|err :: str|seq|str
-// int|map|err :: uns|map|err :: flt|map|err :: str|map|str
-
-// multiplication truth table time
-//  v1| v2|res ::  v1| v2|res ::  v1| v2|res ::  v1| v2|res
-// int|int|int :: uns|int|int :: flt|int|flt :: str|int|str
-// int|uns|int :: uns|uns|uns :: flt|uns|flt :: str|uns|str
-// int|flt|flt :: uns|flt|flt :: flt|flt|flt :: str|flt|err
-// int|str|err :: uns|str|err :: flt|str|err :: str|str|err
-// int|seq|err :: uns|seq|err :: flt|seq|err :: str|seq|str
-// int|map|err :: uns|map|err :: flt|map|err :: str|map|str
-
-// division truth table time
-//  v1| v2|res ::  v1| v2|res ::  v1| v2|res ::  v1| v2|res
-// int|int|int :: uns|int|int :: flt|int|flt :: str|int|err
-// int|uns|int :: uns|uns|uns :: flt|uns|flt :: str|uns|err
-// int|flt|flt :: uns|flt|flt :: flt|flt|flt :: str|flt|err
-// int|str|err :: uns|str|err :: flt|str|err :: str|str|err
-// int|seq|err :: uns|seq|err :: flt|seq|err :: str|seq|str
-// int|map|err :: uns|map|err :: flt|map|err :: str|map|str
-
-template<typename T>
-Composite lisp_binary_plus_impl(T v1, upComposite& v2) {
-    return Composite(CompositeDataType::UNKNOWN);
-}
-
-template<>
-Composite lisp_binary_plus_impl<int64_t>(int64_t v1, upComposite& v2) {
-    switch (v2->type()) {
-        case CompositeDataType::INT8:
-        case CompositeDataType::INT16:
-        case CompositeDataType::INT32:
-        case CompositeDataType::INT64:
-            return v1 + v2->as_int();
-        default:
-            return 0;
-    }
-}
-
-Composite lisp_binary_plus(Composite& v1, upComposite& v2) {
-
-    return lisp_binary_plus_impl<int64_t>(v1.as_int(), v2);
-}
-
-upComposite lisp_plus(CompositeVector& vec) {
-
-    // TODO: types are uint64_t > int64_t > double
-    // allow mixed types and promote in that order
-    // also allow combining strings
-
-    if (vec.size() == 2) {
-        auto& ptr = vec[1];
-        return std::unique_ptr<Composite>(new Composite(*ptr));
-    }
-    // vec size must be 3 or more
-    Composite result = lisp_binary_plus(*vec[1], vec[2]);
-    for (int i=3; i<vec.size(); i++) {
-        result = lisp_binary_plus(result, vec[3]);
-    }
-    return std::unique_ptr<Composite>(new Composite(result));
-}
-
-
 LispFunctionMap lisp_map = {
     {"+", lisp_plus},
+    {"-", lisp_subtract},
+    {"*", lisp_multiply},
+    {"/", lisp_divide},
 };
 
 }
@@ -359,7 +281,7 @@ std::unique_ptr<Composite> LispStream::eval() {
 }
 
 std::unique_ptr<Composite> LispStream::eval_r(CompositeVector& vec) {
-    for (int i=0; i<vec.size(); i++) {
+    for (size_t i=0; i<vec.size(); i++) {
         auto& ptr = vec[i];
         // todo I need two different types of SEQ, lisp seq, data seq
         // ... or evaluate on _pop_list and avoid this recursion

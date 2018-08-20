@@ -13,6 +13,7 @@ set(src_framework_cpp
     ${FRAMEWORK_PATH}/graph.cpp
     ${FRAMEWORK_PATH}/graphdef.cpp
     ${FRAMEWORK_PATH}/lisp.cpp
+    ${FRAMEWORK_PATH}/lispexpr.cpp
     ${FRAMEWORK_PATH}/node.cpp
     ${FRAMEWORK_PATH}/port.cpp
     ${FRAMEWORK_PATH}/processor.cpp
@@ -29,6 +30,7 @@ set(src_framework_hpp
     ${FRAMEWORK_PATH}/graph.hpp
     ${FRAMEWORK_PATH}/graphdef.hpp
     ${FRAMEWORK_PATH}/lisp.hpp
+    ${FRAMEWORK_PATH}/lispexpr.hpp
     ${FRAMEWORK_PATH}/node.hpp
     ${FRAMEWORK_PATH}/port.hpp
     ${FRAMEWORK_PATH}/processor.hpp
@@ -46,6 +48,7 @@ create_object_library(SigprocFramework_object ${src_framework_all})
 
 create_shared_library(SigprocFrameworkTest
     $<TARGET_OBJECTS:SigprocFramework_object>
+    $<TARGET_OBJECTS:SigprocCommon_object>
     $<TARGET_OBJECTS:SigprocUnitTest_object>
 )
 

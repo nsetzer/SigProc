@@ -22,6 +22,7 @@ create_object_library(SigprocNodes_object ${src_nodes_all})
 
 create_shared_library(SigprocNodeTest
     $<TARGET_OBJECTS:SigprocFramework_object>
+    $<TARGET_OBJECTS:SigprocCommon_object>
     $<TARGET_OBJECTS:SigprocNodes_object>
     $<TARGET_OBJECTS:SigprocUnitTest_object>
 )

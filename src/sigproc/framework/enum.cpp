@@ -24,6 +24,7 @@ template<> CompositeDataType getCompositeDataType<float>() { return CompositeDat
 template<> CompositeDataType getCompositeDataType<double>() { return CompositeDataType::FLOAT64; }
 
 template<> CompositeDataType getCompositeDataType<std::string>() { return CompositeDataType::STRING; }
+template<> CompositeDataType getCompositeDataType<char*>() { return CompositeDataType::STRING; }
 
 template<> CompositeDataType getCompositeDataType<bool>() { return CompositeDataType::BOOL; }
 

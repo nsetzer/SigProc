@@ -111,10 +111,10 @@ SIGPROC_TEST(CompositeDecode_token) {
         decoder.push("true");
         decoder.close();
         ASSERT_NOT_NULL(decoder.root());
-        ASSERT_EQUAL(CompositeDataType::INT64, decoder.root()->type());
-        int64_t* i=nullptr;
-        decoder.root()->value<int64_t>(&i);
-        int64_t e = 1;
+        ASSERT_EQUAL(CompositeDataType::BOOL, decoder.root()->type());
+        int8_t* i=nullptr;
+        decoder.root()->value<int8_t>(&i);
+        int8_t e = 1;
         ASSERT_EQUAL(e, *i);
     }
 
@@ -126,10 +126,10 @@ SIGPROC_TEST(CompositeDecode_token) {
         decoder.push("false");
         decoder.close();
         ASSERT_NOT_NULL(decoder.root());
-        ASSERT_EQUAL(CompositeDataType::INT64, decoder.root()->type());
-        int64_t* i = nullptr;
-        decoder.root()->value<int64_t>(&i);
-        int64_t e = 0;
+        ASSERT_EQUAL(CompositeDataType::BOOL, decoder.root()->type());
+        int8_t* i = nullptr;
+        decoder.root()->value<int8_t>(&i);
+        int8_t e = 0;
         ASSERT_EQUAL(e, *i);
     }
 
@@ -257,7 +257,7 @@ SIGPROC_TEST(CompositeStreamDecode_error_unterminated_string) {
 
 SIGPROC_TEST(CompositeStreamDecode_error_unterminated_collection) {
 
-    CompositeStream decoder;
+    CompositeStream decoder(false);
 
     decoder.push("\n\n   { abc: 0, ");
 
@@ -265,9 +265,10 @@ SIGPROC_TEST(CompositeStreamDecode_error_unterminated_collection) {
         decoder.close();
         ASSERT_FAIL("expected throw");
     } catch (CompositeStreamException& ex) {
-        size_t expected = 4;
-        std::cout << ex.what() << std::endl;
-        ASSERT_EQUAL(expected, ex.line());
+        size_t line = 2;
+        ASSERT_EQUAL(line, ex.line());
+        size_t column = 4;
+        ASSERT_EQUAL(column, ex.offset());
     }
 }
 

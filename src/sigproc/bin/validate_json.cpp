@@ -73,6 +73,7 @@ int main(int argc, char* argv[]) {
         if (stream.root() != nullptr) {
             //(*fout) << *stream.root() << std::endl;
             stream.root()->print(*fout, 0, 2, pretty);
+            *fout << std::endl;
         } else {
             std::cerr << "no root object decoded" << std::endl;
         }

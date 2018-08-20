@@ -102,93 +102,57 @@ void* Composite::value(CompositeDataType type) {
     }
 }
 
-
 template<typename T>
 T* Composite::value(T** p) {
     if (p != nullptr) { *p = nullptr; }
     return nullptr;
 }
 
-/*
-template<typename T>
-T* Composite::value(T** p) {
-    void* pValue = nullptr;
-
-    if (getCompositeDataType<T>() == m_type) {
-        switch (m_type) {
-            case CompositeDataType::INT8:
-                pValue = static_cast<void*>(&m_value.i8);
-                break;
-            case CompositeDataType::INT16:
-                pValue = static_cast<void*>(&m_value.i16);
-                break;
-            case CompositeDataType::INT32:
-                pValue = static_cast<void*>(&m_value.i32);
-                break;
-            case CompositeDataType::INT64:
-                pValue = static_cast<void*>(&m_value.i64);
-                break;
-            case CompositeDataType::UINT8:
-                pValue = static_cast<void*>(&m_value.u8);
-                break;
-            case CompositeDataType::UINT16:
-                pValue = static_cast<void*>(&m_value.u16);
-                break;
-            case CompositeDataType::UINT32:
-                pValue = static_cast<void*>(&m_value.u32);
-                break;
-            case CompositeDataType::UINT64:
-                pValue = static_cast<void*>(&m_value.u64);
-                break;
-            case CompositeDataType::FLOAT32:
-                pValue = static_cast<void*>(&m_value.f32);
-                break;
-            case CompositeDataType::FLOAT64:
-                pValue = static_cast<void*>(&m_value.f64);
-                break;
-            default:
-                SIGPROC_THROW("Illegal cast to " << m_type);
-        }
-    } else {
-        SIGPROC_THROW("Illegal cast to " << getCompositeDataType<T>() << " from composite. Type is " << m_type);
+#define DEFINE_VALUE_ACCESSOR(TYPE, ENUM, ATTR) template<> \
+    TYPE* Composite::value<TYPE>(TYPE** p) { \
+        TYPE* pValue = nullptr; \
+        switch (m_type) { \
+            case ENUM: \
+                pValue = &ATTR; \
+                break; \
+            default: \
+                SIGPROC_THROW("Illegal cast to " \
+                    << getCompositeDataType<TYPE>() \
+                    << " from composite. Type is " << \
+                    getCompositeDataTypeName(m_type)); \
+        } \
+        if (p != nullptr) { *p = pValue; } \
+        return pValue; \
     }
-    if (p != nullptr) { *p = static_cast<T*>(pValue); }
-    return static_cast<T*>(pValue);
-}
-*/
 
+DEFINE_VALUE_ACCESSOR(int16_t, CompositeDataType::INT16, m_value.i16);
+DEFINE_VALUE_ACCESSOR(int32_t, CompositeDataType::INT32, m_value.i32);
+DEFINE_VALUE_ACCESSOR(int64_t, CompositeDataType::INT64, m_value.i64);
+DEFINE_VALUE_ACCESSOR(uint8_t, CompositeDataType::UINT8, m_value.u8);
+DEFINE_VALUE_ACCESSOR(uint16_t, CompositeDataType::UINT16, m_value.u16);
+DEFINE_VALUE_ACCESSOR(uint32_t, CompositeDataType::UINT32, m_value.u32);
+DEFINE_VALUE_ACCESSOR(uint64_t, CompositeDataType::UINT64, m_value.u64);
+DEFINE_VALUE_ACCESSOR(float, CompositeDataType::FLOAT32, m_value.f32);
+DEFINE_VALUE_ACCESSOR(double, CompositeDataType::FLOAT64, m_value.f64);
+DEFINE_VALUE_ACCESSOR(char*, CompositeDataType::STRING, m_value.str);
 
 template<>
-int64_t* Composite::value<int64_t>(int64_t** p) {
-    int64_t* pValue = nullptr;
+int8_t* Composite::value<int8_t>(int8_t** p) {
+    int8_t* pValue = nullptr;
     switch (m_type) {
-        case CompositeDataType::INT64:
-            pValue = &m_value.i64;
+        case CompositeDataType::BOOL:
+        case CompositeDataType::INT8:
+            pValue = &m_value.i8;
             break;
         default:
-            SIGPROC_THROW("Illegal cast to string from composite. Type is " <<
+            SIGPROC_THROW("Illegal cast to "
+                << getCompositeDataType<int8_t>()
+                << " from composite. Type is " <<
                 getCompositeDataTypeName(m_type));
     }
     if (p != nullptr) { *p = pValue; }
     return pValue;
 }
-
-
-template<>
-char** Composite::value<char*>(char*** p) {
-    char** pValue = nullptr;
-    switch (m_type) {
-        case CompositeDataType::STRING:
-            pValue = &m_value.str;
-            break;
-        default:
-            SIGPROC_THROW("Illegal cast to string from composite. Type is " <<
-                getCompositeDataTypeName(m_type));
-    }
-    if (p != nullptr) { *p = pValue; }
-    return pValue;
-}
-
 
 template<>
 CompositeVector* Composite::value<CompositeVector>(CompositeVector** p) {

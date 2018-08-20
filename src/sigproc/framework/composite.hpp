@@ -324,6 +324,8 @@ private:
 
 };
 
+typedef std::unique_ptr<Composite> upComposite;
+
     } // framework
 } // sigproc
 
