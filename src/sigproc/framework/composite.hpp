@@ -281,7 +281,7 @@ public:
     CompositeVector& as_vector();
     CompositeVector& as_vector() const;
     CompositeMap& as_map();
-    CompositeMap& as_map() const;
+    const CompositeMap& as_map() const;
 
     void print(std::ostream& os, size_t depth, size_t tab_width, bool pretty) const;
 

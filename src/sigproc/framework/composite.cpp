@@ -304,7 +304,7 @@ CompositeMap& Composite::as_map()
     }
 }
 
-CompositeMap& Composite::as_map() const
+const CompositeMap& Composite::as_map() const
 {
     switch (m_type) {
         case CompositeDataType::MAP:

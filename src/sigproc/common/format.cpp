@@ -1,5 +1,6 @@
 
 
+#include "sigproc/common/string.hpp"
 #include "sigproc/common/format.hpp"
 
 
@@ -22,12 +23,12 @@ void tprintf_i<char>(std::ostream& os, const Format& fmt, char value)
 }
 
 void osprintf(std::ostream& os, size_t index, const std::string& fmtstr) {
-    os << fmtstr.substr(index, fmtstr.size()-index);
+    os << replace(fmtstr.substr(index, fmtstr.size()-index), "%%", "%");
 }
 
 std::string sprintf(const std::string& fmtstr)
 {
-    return fmtstr;
+    return replace(fmtstr, "%%", "%");
 }
 
 
