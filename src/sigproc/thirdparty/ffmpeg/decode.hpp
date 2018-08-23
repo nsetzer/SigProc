@@ -1,7 +1,7 @@
 
 
-#ifndef SIGPROC_THIRDPARTY_FFMPEG_HPP
-#define SIGPROC_THIRDPARTY_FFMPEG_HPP
+#ifndef SIGPROC_THIRDPARTY_FFMPEG_DECODE_HPP
+#define SIGPROC_THIRDPARTY_FFMPEG_DECODE_HPP
 
 #include <memory>
 
@@ -11,8 +11,8 @@ namespace sigproc {
 
 class DecoderImpl;
 
-// todo: templatize the output,
-// allow for returing
+// todo: template-ize the output,
+// allow for returning
 //      uint8_t - simple byt arrays (useful for files)
 //      uint16_t - PCM samples
 //      float  - may be usefull

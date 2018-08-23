@@ -1,40 +1,19 @@
 
-//#include "sigproc/common/format.hpp"
-//using namespace sigproc::common;
-
 #include <iostream>
 #include <vector>
-#include <cstring>
 
 #include "sigproc/thirdparty/ffmpeg/decode.hpp"
+#include "sigproc/common/exception.hpp"
 
 extern "C"
 {
-// https://github.com/FFmpeg/FFmpeg/blob/master/doc/examples/resampling_audio.c
-// https://github.com/arjanhouben/SDL_ffmpeg/blob/master/Findavutil.cmake
-// https://github.com/arjanhouben/SDL_ffmpeg/blob/master/lib/CMakeLists.txt
 #include "libavformat/avformat.h"
-#include <libavutil/opt.h>
-#include <libavutil/channel_layout.h>
-#include <libavutil/samplefmt.h>
-#include <libswresample/swresample.h>
+#include "libavcodec/avcodec.h"
+#include "libavutil/opt.h"
+#include "libavutil/channel_layout.h"
+#include "libavutil/samplefmt.h"
+#include "libswresample/swresample.h"
 }
-
-#define Value(x) #x << ": " << x << " "
-// example for using avformat for reading, instead of fread
-//https://stackoverflow.com/questions/9509284/mp3-decoding-using-ffmpeg-api-header-missing
-
-//#include "sigproc/common/format.hpp"
-
-/*
-
-iformat = av_find_input_format(arg);
-AVInputFormat *iformat = av_find_input_format(mpeg);
-avformat_find_stream_info
-
-static AVInputFormat *iformat = NULL;
-
-*/
 
 namespace sigproc {
     namespace thirdparty {
@@ -105,7 +84,6 @@ public:
 
 };
 
-
 class ResamplerImpl
 {
     int64_t m_src_ch_layout;
@@ -123,14 +101,13 @@ class ResamplerImpl
     int m_src_rate;
     int m_dst_rate;
 
-    int m_src_linesize;
     int m_dst_linesize;
 
     int m_src_nb_samples;
     int m_dst_nb_samples;
     int m_max_dst_nb_samples;
 
-    struct SwrContext *m_swr_ctx;
+    struct SwrContext *m_swr_ctx = NULL;
 
     uint8_t** m_dst_data = NULL;
 
@@ -154,36 +131,42 @@ public:
 
     void set_input_opts(AVCodecContext *ctx, AVFrame *frame) {
         m_src_nb_channels = ctx->channels;
-        m_src_rate = frame->sample_rate;
         if (m_src_nb_channels > 2) {
             throw std::runtime_error("invalid number of channels");
         }
+        m_src_rate = frame->sample_rate;
+        if (m_src_rate < 100) {
+            SIGPROC_THROW("source rate lower than expected: " << m_src_rate);
+        }
         m_src_ch_layout = (m_src_nb_channels==2)?AV_CH_LAYOUT_STEREO:AV_CH_LAYOUT_MONO;
         m_src_sample_fmt = static_cast<AVSampleFormat>(frame->format);
+
     }
 
     void set_output_opts(int n_channels, int sample_rate) {
         m_dst_nb_channels = n_channels;
+        if (m_dst_nb_channels > 2) {
+            throw std::runtime_error("invalid number of channels");
+        }
         m_dst_rate = sample_rate;
+        if (m_dst_rate < 100) {
+            SIGPROC_THROW("source rate lower than expected: " << m_src_rate);
+        }
         m_dst_ch_layout = (n_channels==2)?AV_CH_LAYOUT_STEREO:AV_CH_LAYOUT_MONO;
     }
 
-    void configure() {
+    bool configure() {
         int ret;
 
+        if (m_src_rate==0 || m_dst_rate==0) {
+            // occasionally a bad frame sneaks through for the input source
+            std::cerr << "trying to configure with a bad configuration" << std::endl;
+            return false;
+        }
         m_swr_ctx = swr_alloc();
         if (!m_swr_ctx) {
             throw std::runtime_error("m_swr_ctx alloc");
         }
-
-        std::cout
-            << Value(m_src_ch_layout)
-            << Value(m_src_rate)
-            << Value(m_src_sample_fmt) << std::endl;
-        std::cout
-            << Value(m_dst_ch_layout)
-            << Value(m_dst_rate)
-            << Value(m_dst_sample_fmt) << std::endl;
 
         av_opt_set_int(m_swr_ctx, "in_channel_layout",    m_src_ch_layout, 0);
         av_opt_set_int(m_swr_ctx, "in_sample_rate",       m_src_rate, 0);
@@ -200,6 +183,8 @@ public:
 
         m_max_dst_nb_samples = 0;
         m_dst_nb_samples = 0;
+
+        return true;
     }
 
     bool is_configured() {
@@ -209,7 +194,19 @@ public:
     size_t resample(AVFrame *frame, BufferedVector<uint8_t>& buffer) {
         int ret;
 
-        // check if we need to reallocate the output
+        if (m_src_rate==0) {
+            SIGPROC_THROW("source rate not initialized");
+        }
+
+        if (m_dst_rate==0) {
+            SIGPROC_THROW("destination rate not initialized");
+        }
+
+        if (m_swr_ctx==nullptr) {
+            SIGPROC_THROW("context not configured");
+        }
+
+        // check if we need to reallocate space for the output
         m_dst_nb_samples = av_rescale_rnd(swr_get_delay(m_swr_ctx, m_src_rate) +
                                         frame->nb_samples, m_dst_rate, m_src_rate, AV_ROUND_UP);
         if (m_dst_nb_samples > m_max_dst_nb_samples) {
@@ -251,7 +248,6 @@ class DecoderImpl
     const AVCodec* m_codec = NULL;
     AVCodecContext* m_codec_ctx= NULL;
     AVCodecParserContext* m_parser = NULL;
-    AVInputFormat* m_iformat = NULL;
     AVFrame* m_decoded_frame = NULL;
     AVPacket* m_pkt = NULL;
     BufferedVector<uint8_t> m_input_buffer;
@@ -263,7 +259,7 @@ class DecoderImpl
     int m_output_samplerate;
 
 public:
-    DecoderImpl(int sample_rate, int n_channels)
+    DecoderImpl(int format, int sample_rate, int n_channels)
         : m_input_buffer()
         , m_output_buffer()
         , m_resampler() {
@@ -271,7 +267,7 @@ public:
         // these are the three parameters that MUST be set by the user
         // a helper function could be written, given a filepath
         // or a file extension
-        m_audio_codec_id = AV_CODEC_ID_MP3;
+        set_codec(format);
         m_output_channels = n_channels;
         m_output_samplerate = sample_rate;
         init();
@@ -281,9 +277,7 @@ public:
         release();
     }
 
-    void set_codec(int format) {
-        m_audio_codec_id = AV_CODEC_ID_MP3;
-    }
+
 
     void push_data(uint8_t* data, size_t n_elements) {
         m_input_buffer.push_back(data, n_elements);
@@ -304,14 +298,17 @@ public:
     }
 
 private:
-    void init() {
 
-        std::string reason("OK");
+    void set_codec(int format) {
+        m_audio_codec_id = AV_CODEC_ID_MP3;
+    }
+
+    void init() {
 
         m_codec = avcodec_find_decoder(m_audio_codec_id);
         if (!m_codec) {
             release();
-            throw std::runtime_error("codec");
+            SIGPROC_THROW("failed to find codec for: " << m_audio_codec_id);
         }
 
         m_codec_ctx = avcodec_alloc_context3(m_codec);
@@ -384,7 +381,7 @@ private:
 
     void decode_frame() {
 
-        int ret, data_size;
+        int ret;
 
         ret = avcodec_send_packet(m_codec_ctx, m_pkt);
         if (ret < 0) {
@@ -420,7 +417,7 @@ private:
             // by default the mp3 codec outputs planar floats
             // this is an example of copying planar floats out as
             // interleaved data
-            data_size = av_get_bytes_per_sample(m_codec_ctx->sample_fmt);
+            int data_size = av_get_bytes_per_sample(m_codec_ctx->sample_fmt);
 
             for (int i = 0; i < m_decoded_frame->nb_samples; i++) {
                 for (int ch = 0; ch < m_codec_ctx->channels; ch++) {
@@ -434,9 +431,8 @@ private:
 };
 
 Decoder::Decoder(int format, int sample_rate, int n_channels)
-    : m_impl(new DecoderImpl(sample_rate, n_channels))
+    : m_impl(new DecoderImpl(format, sample_rate, n_channels))
 {
-    m_impl->set_codec(0);
 }
 
 Decoder::~Decoder()
@@ -464,6 +460,25 @@ void Decoder::output_erase(size_t n_elements)
 {
     m_impl->output().erase(n_elements);
 }
+
+
+/**
+ * FFmpegInit handles one time operations required for FFmpeg to function
+ */
+class FFmpegInit
+{
+public:
+    FFmpegInit() {
+        //avcodec_init();
+        // disable ffmpeg logging
+        av_log_set_level(0);
+        // register all codecs
+        avcodec_register_all();
+    }
+    ~FFmpegInit() = default;
+};
+
+FFmpegInit _init;
 
         } // ffmpeg
     } // thirdparty

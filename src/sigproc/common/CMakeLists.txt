@@ -33,6 +33,7 @@ set(UNITTEST_PATH "${PROJECT_SOURCE_DIR}/sigproc/common/unittest")
 
 set(src_unittest_cpp
     ${UNITTEST_PATH}/unittest.cpp
+    ${UNITTEST_PATH}/unittest_assert.cpp
     ${UNITTEST_PATH}/unittest_main.cpp
 )
 

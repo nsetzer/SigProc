@@ -22,7 +22,7 @@ public:
 };
 
 template<typename T>
-void assert_equal(const std::string& sExpected, const std::string& sActual, const T& expected, const T& actual) {
+void assert_equal(const std::string& sExpected, const std::string& sActual, T expected, T actual) {
     if (expected != actual) {
         std::stringstream ss;
         ss << "Expected " << sExpected << " to equal " << sActual
@@ -30,12 +30,6 @@ void assert_equal(const std::string& sExpected, const std::string& sActual, cons
         throw SigprocAssertionFailed(ss.str());
     }
 }
-
-template<>
-void assert_equal<float>(const std::string& sExpected, const std::string& sActual, const float& expected, const float& actual);
-
-template<>
-void assert_equal<double>(const std::string& sExpected, const std::string& sActual, const double& expected, const double& actual);
 
 template<typename T>
 void assert_not_null(const std::string& sExpected, const T& expected) {

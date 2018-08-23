@@ -6,11 +6,53 @@ include(sigproc)
 
 set(THIRDPARTY_PATH "${PROJECT_SOURCE_DIR}/sigproc/thirdparty")
 set(FFMPEG_PATH "${PROJECT_SOURCE_DIR}/alien/ffmpeg")
+set(FFTW_PATH "${PROJECT_SOURCE_DIR}/alien/fftw")
+
+set(src_fftw_cpp
+    ${THIRDPARTY_PATH}/fftw/rfft.cpp
+)
+
+set(src_fftw_hpp
+    ${THIRDPARTY_PATH}/fftw/rfft.hpp
+)
+
+set(src_fftw_all
+        ${src_fftw_cpp}
+        ${src_fftw_hpp}
+    )
+
+find_library(FFTW3_PATH fftw3
+    PATHS "${FFTW_PATH}/.libs")
+message(warning " FFTW3_PATH: ${FFTW3_PATH}")
+
+include_directories("${FFTW_PATH}/api")
+
+function(create_thirdparty_fftw_test module base)
+
+    add_executable("${module}_${base}"
+        ${THIRDPARTY_PATH}/${module}/test/${base}.cpp
+        ${src_fftw_all}
+        $<TARGET_OBJECTS:SigprocCommon_object>
+        $<TARGET_OBJECTS:SigprocUnitTest_object>
+    )
+
+    target_link_libraries("${module}_${base}" ${FFTW3_PATH})
+    set_target_properties("${module}_${base}" PROPERTIES COMPILE_FLAGS "-Wno-old-style-cast")
+    set_target_properties("${module}_${base}"
+        PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
+
+endfunction()
+
+create_thirdparty_fftw_test(fftw rfft_test)
+
+set(src_ffmpeg_hpp
+    ${THIRDPARTY_PATH}/ffmpeg/decode.hpp
+)
 
 set(src_ffmpeg_cpp
     ${THIRDPARTY_PATH}/ffmpeg/decode.cpp
 )
-
 
 set(src_ffmpeg_hpp
     ${THIRDPARTY_PATH}/ffmpeg/decode.hpp
@@ -43,8 +85,6 @@ find_library(FFMPEG_LIBSWSCALE_PATH swscale
 message(warning " FFMPEG_LIBSWSCALE_PATH: ${FFMPEG_LIBSWSCALE_PATH}")
 
 include_directories("${FFMPEG_PATH}")
-include_directories("${FFMPEG_PATH}/libavutil")
-link_directories("${FFMPEG_PATH}/libavutil")
 
 #create_static_library(SigprocThirdpartyFFmpeg ${src_ffmpeg_all})
 
@@ -109,7 +149,7 @@ function(create_thirdparty_tool name source)
     target_link_libraries("${name}" ${FFMPEG_LIBAVCODEC_PATH})
     target_link_libraries("${name}" ${FFMPEG_LIBAVUTIL_PATH})
     #target_link_libraries("${module}_${base}" ${FFMPEG_LIBSWSCALE_PATH})
-    target_link_libraries("${name}" rt)
+    # target_link_libraries("${name}" rt)
     target_link_libraries("${name}" pthread)
     target_link_libraries("${name}" m)
 
