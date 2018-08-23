@@ -49,11 +49,11 @@ int main(int argc, char* argv[]) {
     }
 
     if (args.size() > 1 && args[1] != "-") {
-        fin = new std::ifstream(argv[1]);
+        fin = new std::ifstream(args[1].c_str());
     }
 
-    if (args.size() > 1 && args[1] != "-") {
-        fout = new std::ofstream(argv[2]);
+    if (args.size() > 2 && args[2] != "-") {
+        fout = new std::ofstream(args[2].c_str());
     }
 
     try {

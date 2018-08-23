@@ -268,7 +268,7 @@ class FormatSaver
 public:
     FormatSaver(std::ios_base& ios)
         : m_ios(&ios)
-        , m_flags(ios.flags(0))
+        , m_flags(ios.flags(std::ios_base::fmtflags()))
     {}
     ~FormatSaver()
     {

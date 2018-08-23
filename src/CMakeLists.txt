@@ -19,7 +19,7 @@ message("not setting compiler flags for windows")
 
 else()
 
-set(CMAKE_CXX_FLAGS "-Wall -Wold-style-cast -Werror -fno-rtti -Wno-deprecated-declarations" CACHE INTERNAL "" FORCE)
+set(CMAKE_CXX_FLAGS "-Wall -Wold-style-cast -Werror -fno-rtti -Wno-deprecated-declarations -Wno-unused-variable" CACHE INTERNAL "" FORCE)
 if("${CMAKE_BUILD_TYPE}" MATCHES "Coverage")
   set(CMAKE_CXX_FLAGS "-DDEBUG ${CMAKE_CXX_FLAGS}" CACHE INTERNAL "" FORCE)
   include(CMakeCover)
