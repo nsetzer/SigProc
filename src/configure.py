@@ -10,9 +10,30 @@ from distutils.spawn import find_executable as which
 
 msvc_path_default = "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\Common7\\Tools\\vsvars32.bat"
 
-def sh(cmd):
-    logging.info(" ".join(cmd))
-    return subprocess.Popen(cmd).communicate()
+def sh_escape(args):
+    """
+    print an argument list so that it can be copy and pasted to a terminal
+
+    python 2 does not have a shlex.quote
+    """
+    args = args[:]
+    for i, arg in enumerate(args):
+        #  check the string for special characters
+        for c in "\"\\ ":
+            if c in arg:
+                arg = '"' + arg.replace('"', '\\"') + '"'
+                args[i] = arg
+                continue
+    return ' '.join(args)
+
+def sh(cmd, noexec=False):
+
+    # , stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    logging.info("execute: " + sh_escape(cmd))
+    if noexec:
+        return "", ""
+    else:
+        return subprocess.Popen(cmd).communicate()
 
 def maybe_quote(arg):
     if ' ' in arg:

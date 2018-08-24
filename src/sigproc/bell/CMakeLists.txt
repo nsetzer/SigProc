@@ -138,6 +138,8 @@ function(create_bell_test name source)
 endfunction()
 
 create_bell_test(rfft_test ${BELL_PATH}/fftw/test/rfft_test.cpp)
+create_bell_test(directform_test ${BELL_PATH}/algorithm/test/directform_test.cpp)
+create_bell_test(zbfilter_test ${BELL_PATH}/algorithm/test/zbfilter_test.cpp)
 
 create_bell_tool(resample ${BELL_PATH}/ffmpeg/tools/resample.cpp)
 

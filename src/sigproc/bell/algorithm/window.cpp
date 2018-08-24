@@ -6,8 +6,9 @@
 namespace sigproc {
     namespace bell {
         namespace algorithm {
+            namespace window {
 
-
+            } // window
         } // algorithm
     } // bell
 } // sigproc
