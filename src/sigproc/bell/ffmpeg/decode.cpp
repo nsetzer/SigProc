@@ -2,7 +2,7 @@
 #include <iostream>
 #include <vector>
 
-#include "sigproc/thirdparty/ffmpeg/decode.hpp"
+#include "sigproc/bell/ffmpeg/decode.hpp"
 #include "sigproc/common/exception.hpp"
 
 extern "C"
@@ -16,7 +16,7 @@ extern "C"
 }
 
 namespace sigproc {
-    namespace thirdparty {
+    namespace bell {
         namespace ffmpeg {
 
 template<typename T>
@@ -481,5 +481,5 @@ public:
 FFmpegInit _init;
 
         } // ffmpeg
-    } // thirdparty
+    } // bell
 } // sigproc

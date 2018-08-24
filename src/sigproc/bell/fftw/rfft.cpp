@@ -10,10 +10,10 @@ extern "C" {
 
 }
 
-#include "sigproc/thirdparty/fftw/rfft.hpp"
+#include "sigproc/bell/fftw/rfft.hpp"
 
 namespace sigproc {
-    namespace thirdparty {
+    namespace bell {
         namespace fftw {
 
 class RealFFTImpl
@@ -116,5 +116,5 @@ double RealFFT::frequency(size_t index) {
 }
 
         } // fftw
-    } // thirdparty
+    } // bell
 } // sigproc

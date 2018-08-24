@@ -6,9 +6,9 @@
 #include <iostream>
 #include <cstdint>
 
-#include "sigproc/thirdparty/ffmpeg/decode.hpp"
+#include "sigproc/bell/ffmpeg/decode.hpp"
 
-using namespace sigproc::thirdparty;
+using namespace sigproc::bell;
 
 template<typename T>
 void fwrite(std::ostream& fout, const T* ptr) {

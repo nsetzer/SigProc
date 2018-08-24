@@ -1,12 +1,12 @@
 
 
-#ifndef SIGPROC_THIRDPARTY_FFMPEG_DECODE_HPP
-#define SIGPROC_THIRDPARTY_FFMPEG_DECODE_HPP
+#ifndef SIGPROC_BELL_FFMPEG_DECODE_HPP
+#define SIGPROC_BELL_FFMPEG_DECODE_HPP
 
 #include <memory>
 
 namespace sigproc {
-    namespace thirdparty {
+    namespace bell {
         namespace ffmpeg {
 
 class DecoderImpl;
@@ -40,7 +40,7 @@ public:
 
 
         } // ffmpeg
-    } // thirdparty
+    } // bell
 } // sigproc
 
 #endif

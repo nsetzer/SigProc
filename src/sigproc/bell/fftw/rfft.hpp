@@ -1,9 +1,9 @@
 
-#ifndef SIGPROC_THIRDPARTY_FFTW_RFFT_HPP
-#define SIGPROC_THIRDPARTY_FFTW_RFFT_HPP
+#ifndef SIGPROC_BELL_FFTW_RFFT_HPP
+#define SIGPROC_BELL_FFTW_RFFT_HPP
 
 namespace sigproc {
-    namespace thirdparty {
+    namespace bell {
         namespace fftw {
 
 enum class FFTKind : char {
@@ -41,7 +41,7 @@ public:
 };
 
         } // fftw
-    } // thirdparty
+    } // bell
 } // sigproc
 
 #endif

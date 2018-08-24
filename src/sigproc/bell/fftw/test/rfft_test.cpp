@@ -4,10 +4,10 @@
 #include <cmath>
 
 #include "sigproc/common/unittest/unittest.hpp"
-#include "sigproc/thirdparty/fftw/rfft.hpp"
+#include "sigproc/bell/fftw/rfft.hpp"
 
 using namespace sigproc::common;
-using namespace sigproc::thirdparty::fftw;
+using namespace sigproc::bell::fftw;
 
 
 // https://dsp.stackexchange.com/questions/633/what-data-should-i-use-to-test-an-fft-implementation-and-what-accuracy-should-i
