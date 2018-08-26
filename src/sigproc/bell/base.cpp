@@ -1,6 +1,7 @@
 
 #include "sigproc/common/exception.hpp"
 #include "sigproc/bell/base.hpp"
+#include "sigproc/bell/algorithm/dct.hpp"
 #include "sigproc/bell/fftw/rfft.hpp"
 
 namespace sigproc {
@@ -29,6 +30,20 @@ TransformBase<double>* newRealTransform<double>(TransformKind kind, size_t Fs, s
     }
     SIGPROC_THROW("Unsupported Transform Kind: " << kind);
 }
+
+
+template <>
+TransformBase<float>* newCosineTransform(TransformKind kind, size_t N, size_t K)
+{
+    return new algorithm::DCTII<float>(N, K);
+}
+
+template <>
+TransformBase<double>* newCosineTransform(TransformKind kind, size_t N, size_t K)
+{
+    return new algorithm::DCTII<double>(N, K);
+}
+
 
     } // bell
 } // sigproc

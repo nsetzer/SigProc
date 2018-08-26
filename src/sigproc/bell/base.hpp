@@ -24,7 +24,7 @@ public:
     TransformBase() {}
     virtual ~TransformBase() {}
 
-    virtual size_t size() =0;
+    virtual size_t size() const =0;
 
     virtual T* inputBegin() =0;
     virtual T* inputEnd() =0;
@@ -32,7 +32,6 @@ public:
     virtual T* outputEnd() =0;
 
     virtual void execute() =0;
-
 
 };
 
@@ -48,6 +47,16 @@ TransformBase<float>* newRealTransform(TransformKind kind, size_t Fs, size_t N);
 template <>
 TransformBase<double>* newRealTransform(TransformKind kind, size_t Fs, size_t N);
 
+template <typename T>
+TransformBase<T>* newCosineTransform(TransformKind kind, size_t N, size_t K) {
+    SIGPROC_THROW("invalid transform type");
+}
+
+template <>
+TransformBase<float>* newCosineTransform(TransformKind kind, size_t N, size_t K);
+
+template <>
+TransformBase<double>* newCosineTransform(TransformKind kind, size_t N, size_t K);
 
     } // bell
 } // sigproc

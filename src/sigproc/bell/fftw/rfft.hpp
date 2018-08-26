@@ -25,7 +25,7 @@ public:
     RealFFT &operator=( const RealFFT& ) = delete; // copy assignment operator
     RealFFT &operator=( const RealFFT&&  ) = delete; // move assignment operator
 
-    virtual size_t size();
+    virtual size_t size() const;
 
     virtual T* inputBegin();
     virtual T* inputEnd();

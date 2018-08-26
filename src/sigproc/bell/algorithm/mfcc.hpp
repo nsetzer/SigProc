@@ -77,6 +77,21 @@ public:
         }
     }
 
+    // inputIter: address to the start of an array of length m_nBin
+    // outputIter: address to the start of an array of length m_nFilterBin
+    void filter(T* inputIter, T* outputIter) {
+        const size_t N = m_table_length.back();
+
+        for (size_t i=0; i < m_nFilterBin; i++) {
+            size_t k = N*i;
+            ssize_t il = m_table_index[i];
+            ssize_t ih = m_table_index[i+2];
+            *outputIter++ = std::inner_product(
+                inputIter+il, inputIter+ih, &m_filters[k], 0.0);
+        }
+    }
+
+
 private:
 
     void init_index(T Fmin, T Fmax) {
@@ -181,17 +196,17 @@ public:
     {}
     ~PreEmphasisFilter() {}
 
-    T apply(T v) {
+    T apply(const T v) {
         // naive, replace with a matrix implementation
         T result = v - m_a * m_last;
         m_last = v;
         return result;
     }
 };
+
 template <typename T>
 class FeatureGenerator
 {
-
     PreEmphasisFilter<T> m_preEmph;
     std::vector<T> m_window;
     std::unique_ptr<FilterBank<T>> m_filterBank;
@@ -200,11 +215,11 @@ class FeatureGenerator
 public:
 
     FeatureGenerator()
+        : m_preEmph(0.97)
     {
         init();
     }
     ~FeatureGenerator() {}
-
 
     void init() {
         size_t Fs = 16000;
@@ -213,14 +228,12 @@ public:
         size_t nFilterBin = 40;
         T minF = 133.0;
         T maxF = 6855.0;
+        T emph = 0.97;
         bool equalize = true;
 
-        m_preEmph = PreEmphasisFilter<T>(0.97);
-
         // create a window function with nWindow, which may be
-        // less than the FFT size. then zero pad to the full width.
+        // less than the FFT size.
         m_window = window::hamming<T>(nWindow);
-        m_window.resize(nBin);
 
         m_filterBank = std::unique_ptr<FilterBank<T>>(
             new FilterBank<T>(Fs, nBin, nFilterBin, minF, maxF, equalize));
@@ -230,11 +243,72 @@ public:
 
         m_dct = std::unique_ptr<TransformBase<T>>(
             newRealTransform<T>(TransformKind::DCTII, Fs, nFilterBin));
+
+        //m_dct = std::unique_ptr<TransformBase<T>>(
+        //    newCosineTransform<T>(TransformKind::DCTII, nBin, nFilterBin));
+    }
+
+    size_t windowSize() const {
+        return m_window.size();
+    }
+
+    size_t frameStep() const {
+        return 160;
     }
 
     // return the number of elements consumed (0 or nWindow)
     // out will be resize to nFilterBin
-    size_t filter(std::vector<T>& in, std::vector<T>& out) {
+    size_t filter(const std::vector<T>& in, std::vector<T>& out) {
+        size_t Fs = 16000;
+        size_t nWindow = 448;
+        size_t nBin = 512;
+        size_t nFilterBin = 40;
+
+        out.resize(nFilterBin);
+
+        //copy input into the transform
+        // apply pre-emph filter and window function
+        {
+            size_t i=0;
+            T* inputIter = m_dft->inputBegin();
+            for (;i < m_window.size(); i++) {
+                *inputIter++ = m_preEmph.apply(in[i]) * (m_window[i]);
+            }
+            // zero pad to the full size
+            for (; i < m_dft->size(); i++) {
+                *inputIter++ = 0.0;
+            }
+        }
+
+        m_dft->execute();
+
+        // convert FFT output to magnitude
+        // TODO: this should be part of the transform
+        // TODO: log should be optional
+        {
+            T* iter = m_dft->outputBegin();
+            T* end = m_dft->outputEnd();
+            while (iter != end) {
+                T v = fabs(*iter) / (nBin/2);
+                if (v < 1e-16) {
+                    v = 1e-16;
+                }
+                *iter = log(v);
+                iter++;
+            }
+        }
+
+        if (m_dct) {
+            m_filterBank->filter(m_dft->outputBegin(), m_dct->inputBegin());
+            m_dct->execute();
+            // TODO: optionally should not copy the entire output.
+            //       e.g. compute 26 DCT bins and only keep the first 13
+            //       keeping the DC bin should also be an option
+            std::copy(m_dct->outputBegin(), m_dct->outputEnd(), out.begin());
+        } else {
+            m_filterBank->filter(m_dft->outputBegin(), &out[0]);
+        }
+
         return 0;
     }
 

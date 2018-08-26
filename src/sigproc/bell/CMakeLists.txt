@@ -80,6 +80,7 @@ set_target_properties(SigprocBellFFmpeg PROPERTIES COMPILE_FLAGS "-Wno-old-style
 
 set(src_algorithm_cpp
     ${BELL_PATH}/algorithm/directform.cpp
+    ${BELL_PATH}/algorithm/dct.cpp
     ${BELL_PATH}/algorithm/mfcc.cpp
     ${BELL_PATH}/algorithm/window.cpp
     ${BELL_PATH}/algorithm/zbfilter.cpp
@@ -87,6 +88,7 @@ set(src_algorithm_cpp
 
 set(src_algorithm_hpp
     ${BELL_PATH}/algorithm/directform.hpp
+    ${BELL_PATH}/algorithm/dct.hpp
     ${BELL_PATH}/algorithm/mfcc.hpp
     ${BELL_PATH}/algorithm/window.hpp
     ${BELL_PATH}/algorithm/zbfilter.hpp
@@ -163,6 +165,7 @@ create_bell_test(rfft_test ${BELL_PATH}/fftw/test/rfft_test.cpp)
 create_bell_test(directform_test ${BELL_PATH}/algorithm/test/directform_test.cpp)
 create_bell_test(zbfilter_test ${BELL_PATH}/algorithm/test/zbfilter_test.cpp)
 create_bell_test(mfcc_test ${BELL_PATH}/algorithm/test/mfcc_test.cpp)
+create_bell_test(dct_test ${BELL_PATH}/algorithm/test/dct_test.cpp)
 
 create_bell_tool(resample ${BELL_PATH}/ffmpeg/tools/resample.cpp)
 create_bell_tool(framegen ${BELL_PATH}/ffmpeg/tools/framegen.cpp)

@@ -8,6 +8,7 @@
 #include <cstring>
 
 #include "sigproc/bell/ffmpeg/decode.hpp"
+#include "sigproc/bell/algorithm/mfcc.hpp"
 
 using namespace sigproc::bell;
 
@@ -48,22 +49,48 @@ void write_wave_header(int16_t num_channels, int32_t sample_rate, std::ostream& 
     fwrite(fout, &kDataSize);
 }
 
-void resample(std::istream* fin, std::ostream* fout, ffmpeg::Decoder& decoder)
+void do_framegen(std::istream* fin, std::ostream* fout,
+    ffmpeg::Decoder& decoder, algorithm::mfcc::FeatureGenerator<double>& frameGen)
 {
     constexpr size_t data_capacity = 2048;
     uint8_t data[data_capacity];
     size_t data_length;
 
+    std::vector<double> frame;
+    std::vector<double> fdata;
+    fdata.resize(frameGen.windowSize());
+
+    int32_t kSampleRate = 16000;
+    int32_t kFrameSize = 40;
+    int32_t kFrameStep = 160;
+    int32_t kUnused = 0;
+    fout->write(reinterpret_cast<const char*>(&kSampleRate), sizeof(int32_t));
+    fout->write(reinterpret_cast<const char*>(&kFrameSize), sizeof(int32_t));
+    fout->write(reinterpret_cast<const char*>(&kFrameStep), sizeof(int32_t));
+    fout->write(reinterpret_cast<const char*>(&kUnused), sizeof(int32_t));
+
+    size_t count = 0;
     while (fin->good()) {
         fin->read(reinterpret_cast<char*>(data), data_capacity);
         decoder.push_data(data, fin->gcount());
 
-        if (decoder.output_size()>0) {
-            fout->write(reinterpret_cast<const char*>(decoder.output_data()),
-                        decoder.output_size());
-            decoder.output_erase(decoder.output_size());
+        while (decoder.output_size()/2 >= frameGen.windowSize()) {
+            const int16_t* idata = reinterpret_cast<const int16_t*>(decoder.output_data());
+            for (size_t i=0; i<frameGen.windowSize(); i++) {
+                fdata[i] = idata[i]/32768.0;
+            }
+
+            frameGen.filter(fdata, frame);
+
+            decoder.output_erase(frameGen.frameStep()*2);
+            count ++;
+
+            fout->write(reinterpret_cast<const char*>(&frame[0]),
+                        sizeof(double)*frame.size());
         }
     }
+
+    std::cout << "produce " << count << " frames" << std::endl;
 }
 
 int main(int argc, char* argv[])
@@ -87,9 +114,9 @@ int main(int argc, char* argv[])
 
     try {
         ffmpeg::Decoder decoder(0, 16000, 1);
+        algorithm::mfcc::FeatureGenerator<double> frameGen;
 
-        write_wave_header(1, 16000, *fout);
-        resample(fin, fout, decoder);
+        do_framegen(fin, fout, decoder, frameGen);
 
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;

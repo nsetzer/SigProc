@@ -83,7 +83,7 @@ RealFFT<T>::~RealFFT() {
 }
 
 template<typename T>
-size_t RealFFT<T>::size()
+size_t RealFFT<T>::size() const
 {
     return m_impl->size();
 }
