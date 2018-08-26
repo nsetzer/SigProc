@@ -23,13 +23,14 @@ class RealFFTImpl
     size_t m_size;
     fftw_plan m_plan;
 public:
-   RealFFTImpl(size_t N, FFTKind kind);
+   RealFFTImpl(size_t N, sigproc::bell::TransformKind kind);
    ~RealFFTImpl();
 
    size_t size() const { return m_size; }
    double* dataIn() { return m_data_i; }
    double* dataInEnd() { return m_data_i + m_size; }
    double* dataOut() { return m_data_o; }
+   double* dataOutEnd() { return m_data_o + m_size; }
 
    void execute() {
         fftw_execute(m_plan);
@@ -37,7 +38,7 @@ public:
 
 };
 
-RealFFTImpl::RealFFTImpl(size_t N, FFTKind kind)
+RealFFTImpl::RealFFTImpl(size_t N, sigproc::bell::TransformKind kind)
     : m_size(N)
 {
 
@@ -47,13 +48,13 @@ RealFFTImpl::RealFFTImpl(size_t N, FFTKind kind)
     // http://www.fftw.org/fftw3_doc/Real_002dto_002dReal-Transform-Kinds.html#Real_002dto_002dReal-Transform-Kinds
     fftw_r2r_kind flags = static_cast<fftw_r2r_kind>(0);
     switch (kind) {
-        case FFTKind::FORWARD:
+        case sigproc::bell::TransformKind::FORWARD:
             flags = FFTW_R2HC;
             break;
-        case FFTKind::DCTII:
+        case sigproc::bell::TransformKind::DCTII:
             flags = FFTW_REDFT10;
             break;
-        case FFTKind::REVERSE:
+        case sigproc::bell::TransformKind::REVERSE:
             flags = FFTW_HC2R;
         default:
             break;
@@ -70,50 +71,81 @@ RealFFTImpl::~RealFFTImpl() {
     fftw_free(m_data_i);
 }
 
-RealFFT::RealFFT(size_t samplerate, size_t N, FFTKind kind)
+template<typename T>
+RealFFT<T>::RealFFT(size_t samplerate, size_t N, sigproc::bell::TransformKind kind)
     : m_samplerate(samplerate)
     , m_impl(new RealFFTImpl(N, kind))
 {}
 
-RealFFT::~RealFFT() {
+template<typename T>
+RealFFT<T>::~RealFFT() {
     delete m_impl;
 }
 
-double* RealFFT::inputBegin()
+template<typename T>
+size_t RealFFT<T>::size()
+{
+    return m_impl->size();
+}
+
+template<typename T>
+T* RealFFT<T>::inputBegin()
 {
     return m_impl->dataIn();
 }
 
-double* RealFFT::inputEnd()
+template<typename T>
+T* RealFFT<T>::inputEnd()
 {
     return m_impl->dataInEnd();
 }
 
-double* RealFFT::outputBegin()
+template<typename T>
+T* RealFFT<T>::outputBegin()
 {
     return m_impl->dataOut();
 }
 
-double* RealFFT::outputEnd()
+template<typename T>
+T* RealFFT<T>::outputEnd()
 {
-    return m_impl->dataOut() + (m_impl->size()/2);
+    return m_impl->dataOutEnd();
 }
 
-void RealFFT::execute()
+template<typename T>
+void RealFFT<T>::execute()
 {
     m_impl->execute();
 }
 
-double RealFFT::frequency(size_t index) {
-     double k = static_cast<double>(index);
-     double N = static_cast<double>(m_impl->size());
-     double Fs = static_cast<double>(m_samplerate);
+template<typename T>
+T RealFFT<T>::frequency(size_t index) {
+     T k = static_cast<T>(index);
+     T N = static_cast<T>(m_impl->size());
+     T Fs = static_cast<T>(m_samplerate);
      if (index <= (m_impl->size()/2)) {
         return k*Fs/N;
     } else {
         return (k-N)*Fs/N;
     }
 }
+
+template<typename T>
+bool RealFFT<T>::supports(sigproc::bell::TransformKind kind)
+{
+    switch (kind) {
+        case sigproc::bell::TransformKind::FORWARD:
+        case sigproc::bell::TransformKind::REVERSE:
+        case sigproc::bell::TransformKind::DCTII:
+            return true;
+        default:
+            return false;
+    }
+}
+
+
+//template class RealFFT<float>;
+template class RealFFT<double>;
 
         } // fftw
     } // bell

@@ -7,6 +7,9 @@
 #include <iomanip>
 #include <iostream>
 #include <type_traits>
+#include <vector>
+#include <streambuf>
+
 /**
  *
  * String Formating
@@ -47,6 +50,62 @@ namespace sigproc {
     namespace common {
         namespace fmt {
 
+template <typename charT, typename traits=std::char_traits<charT> >
+class vectorstreambuf : public std::basic_streambuf<charT, traits>
+{
+    std::vector<charT> m_buffer;
+public:
+    vectorstreambuf() {}
+    ~vectorstreambuf() {}
+
+    int overflow (int c = traits::eof())
+    {
+        if (c != traits::eof()) {
+            m_buffer.push_back(c);
+        }
+        return traits::to_int_type( c );
+    }
+
+    int underflow()
+    {
+        // implement for reading from a char vector
+        return traits::eof();
+        //if (m_buffer.size()==0) {
+        //    return traits::eof();
+        //}
+        //int c = m_buffer.front();
+        //return traits::to_int_type(c);
+    }
+
+    int sync()
+    {
+        return 0;
+    }
+
+    std::vector<charT>& vector() {
+        return m_buffer;
+    }
+
+};
+
+template<typename charT, typename traits=std::char_traits<charT>>
+class ovectorstream :
+    public std::basic_ostream<charT, traits>
+{
+private:
+    vectorstreambuf<charT, traits> m_buffer;
+
+public:
+
+    ovectorstream()
+      : std::basic_ostream<charT, traits>::basic_ostream(&m_buffer)
+      , m_buffer()
+    {}
+
+    std::vector<charT>& vector() {
+        return m_buffer.vector();
+    }
+};
 
 constexpr int FMT_PERCENT   = 0x0001;
 constexpr int FMT_LEFT      = 0x0002;
@@ -356,6 +415,12 @@ void osprintf(std::ostream& os, size_t index, const std::string& fmtstr, const T
     }
 }
 
+template<typename... U>
+void osprintf(std::ostream& os, const std::string& fmtstr, const U... rest)
+{
+    osprintf(os, 0, fmtstr, rest...);
+}
+
 std::string sprintf(const std::string& fmtstr);
 
 template<typename T, typename... U>
@@ -366,6 +431,27 @@ std::string sprintf(const std::string& fmtstr, const T head, const U... rest)
     return ss.str();
 }
 
+template<typename T>
+size_t osprintb(std::ostream& os, const T* value) {
+    os.write(static_cast<const char*>(value), sizeof(T));
+    return sizeof(T);
+}
+
+template<>
+size_t osprintb<char>(std::ostream& os, const char* value);
+
+size_t osprintb(std::ostream& os, const std::string& value);
+
+/*
+template<typename T>
+size_t osprintb(std::ostream& os, const T value) {
+    os.write(static_cast<const char*>(&value), sizeof(T));
+    return sizeof(T);
+}
+
+template<>
+size_t osprintb<std::string>(std::ostream& os, const std::string value);
+*/
 /*
 template<typename... U>
 class PrintFormat

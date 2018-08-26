@@ -80,12 +80,14 @@ set_target_properties(SigprocBellFFmpeg PROPERTIES COMPILE_FLAGS "-Wno-old-style
 
 set(src_algorithm_cpp
     ${BELL_PATH}/algorithm/directform.cpp
+    ${BELL_PATH}/algorithm/mfcc.cpp
     ${BELL_PATH}/algorithm/window.cpp
     ${BELL_PATH}/algorithm/zbfilter.cpp
 )
 
 set(src_algorithm_hpp
     ${BELL_PATH}/algorithm/directform.hpp
+    ${BELL_PATH}/algorithm/mfcc.hpp
     ${BELL_PATH}/algorithm/window.hpp
     ${BELL_PATH}/algorithm/zbfilter.hpp
 )
@@ -97,8 +99,27 @@ set(src_algorithm_all
 
 ###############################################################################
 # BELL
+
+set(src_bell_cpp
+    ${BELL_PATH}/base.cpp
+)
+
+set(src_bell_hpp
+    ${BELL_PATH}/base.hpp
+)
+
+set(src_bell_all
+        ${src_bell_cpp}
+        ${src_bell_hpp}
+    )
+
+create_object_library(SigprocBell_object
+    ${src_bell_all}
+    ${src_algorithm_all})
+# $<TARGET_OBJECTS:SigprocBell_object>
+
 create_shared_library(SigprocBell
-    ${src_algorithm_all}
+    $<TARGET_OBJECTS:SigprocBell_object>
     $<TARGET_OBJECTS:SigprocCommon_object>
 )
 
@@ -109,6 +130,7 @@ target_link_libraries(SigprocBell ${FFMPEG_LIBSWRESAMPLE_PATH})
 target_link_libraries(SigprocBell ${FFMPEG_LIBAVFORMAT_PATH})
 target_link_libraries(SigprocBell ${FFMPEG_LIBAVCODEC_PATH})
 target_link_libraries(SigprocBell ${FFMPEG_LIBAVUTIL_PATH})
+target_link_libraries(SigprocBell pthread)
 
 function(create_bell_tool name source)
 
@@ -140,8 +162,10 @@ endfunction()
 create_bell_test(rfft_test ${BELL_PATH}/fftw/test/rfft_test.cpp)
 create_bell_test(directform_test ${BELL_PATH}/algorithm/test/directform_test.cpp)
 create_bell_test(zbfilter_test ${BELL_PATH}/algorithm/test/zbfilter_test.cpp)
+create_bell_test(mfcc_test ${BELL_PATH}/algorithm/test/mfcc_test.cpp)
 
 create_bell_tool(resample ${BELL_PATH}/ffmpeg/tools/resample.cpp)
+create_bell_tool(framegen ${BELL_PATH}/ffmpeg/tools/framegen.cpp)
 
 
 

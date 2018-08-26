@@ -5,6 +5,8 @@
 
 #include <vector>
 #include <cmath>
+#include <cstddef>
+
 namespace sigproc {
     namespace bell {
         namespace algorithm {

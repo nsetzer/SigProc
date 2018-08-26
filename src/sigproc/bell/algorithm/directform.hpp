@@ -47,7 +47,7 @@ public:
         for (size_t i=0; i < len; i++) {
             T v = x[i];
             T y = 0.0;
-            for (ssize_t j = 1; j < s; j++) {
+            for (size_t j = 1; j < s; j++) {
                 // V is a queue, where increasing the index (in a circular
                 // fashion) goes backwards in time
                 const ssize_t idx = (head + j) % s;

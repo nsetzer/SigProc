@@ -39,7 +39,7 @@ get the latest version of fftw
     ln -s fftw-3.3.8 fftw
     cd fftw
 
-configure and build
+configure and build, enable shared libraries
 
-    ./configure
+    ./configure --enable-shared
     make -j 4

@@ -25,7 +25,7 @@ SIGPROC_TEST(DF2_B)
 
     df2.filt(&v[0], v.size());
 
-    for (int i=0; i < e.size(); i++) {
+    for (size_t i=0; i < e.size(); i++) {
         CMP_DBL(e[i], v[i]);
     }
 }
@@ -43,7 +43,7 @@ SIGPROC_TEST(DF2_A1)
 
     df2.filt(&v[0], v.size());
 
-    for (int i=0; i < e.size(); i++) {
+    for (size_t i=0; i < e.size(); i++) {
         CMP_DBL(e[i], v[i]);
     }
 }
@@ -61,7 +61,7 @@ SIGPROC_TEST(DF2_A2)
 
     df2.filt(&v[0], v.size());
 
-    for (int i=0; i < e.size(); i++) {
+    for (size_t i=0; i < e.size(); i++) {
         CMP_DBL(e[i], v[i]);
     }
 }

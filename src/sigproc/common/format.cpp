@@ -3,6 +3,7 @@
 #include "sigproc/common/string.hpp"
 #include "sigproc/common/format.hpp"
 
+#include <cstring>
 
 namespace sigproc {
     namespace common {
@@ -31,6 +32,19 @@ std::string sprintf(const std::string& fmtstr)
     return replace(fmtstr, "%%", "%");
 }
 
+template<>
+size_t osprintb<char>(std::ostream& os, const char* value)
+{
+    size_t len = strlen(value) + 1;
+    os.write(value, len);
+    return len;
+}
+
+size_t osprintb(std::ostream& os, const std::string& value)
+{
+    os.write(value.c_str(), value.size() + 1);
+    return value.size() + 1;
+}
 
 
         } // fmt

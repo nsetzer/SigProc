@@ -2,41 +2,41 @@
 #ifndef SIGPROC_BELL_FFTW_RFFT_HPP
 #define SIGPROC_BELL_FFTW_RFFT_HPP
 
+#include "sigproc/bell/base.hpp"
+
 namespace sigproc {
     namespace bell {
         namespace fftw {
 
-enum class FFTKind : char {
-    UNKNOWN = 0,
-    FORWARD = 1,
-    REVERSE = 2,
-    DCTII   = 3
-};
-
 class RealFFTImpl;
 
-class RealFFT
+template<typename T>
+class RealFFT : public sigproc::bell::TransformBase<T>
 {
 
     size_t m_samplerate;
     RealFFTImpl* m_impl;
 public:
-    RealFFT(size_t samplerate, size_t N, FFTKind kind);
-    ~RealFFT();
+    RealFFT(size_t samplerate, size_t N, sigproc::bell::TransformKind kind);
+    virtual ~RealFFT();
 
     RealFFT(const RealFFT& ) = delete; // copy constructor
     RealFFT(const RealFFT&& ) = delete; // move constructor
     RealFFT &operator=( const RealFFT& ) = delete; // copy assignment operator
     RealFFT &operator=( const RealFFT&&  ) = delete; // move assignment operator
 
-    double* inputBegin();
-    double* inputEnd();
-    double* outputBegin();
-    double* outputEnd();
+    virtual size_t size();
 
-    double frequency(size_t index);
+    virtual T* inputBegin();
+    virtual T* inputEnd();
+    virtual T* outputBegin();
+    virtual T* outputEnd();
+
+    virtual T frequency(size_t index);
 
     void execute();
+
+    static bool supports(sigproc::bell::TransformKind kind);
 
 };
 

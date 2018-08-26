@@ -33,13 +33,13 @@ SIGPROC_TEST(zbfilter_peq)
     zbpeqfilter<float>(B, A, Fc, Fs, Bw, 0);
     DirectFormII<float> df2(B, A);
 
-    for (int i=0; i < N; i++) {
+    for (size_t i=0; i < N; i++) {
         v.push_back( sin(2 * M_PI * Fc/Fs * i));
     }
 
     df2.filt(&v[0], v.size());
 
-    for (int i=0; i < N; i++) {
+    for (size_t i=0; i < N; i++) {
         float e = sin(2 * M_PI * Fc/Fs * i);
         CMP_DBL(e, v[i], 0.02, i);
     }

@@ -45,6 +45,32 @@ SIGPROC_TEST(Format_sprintf_percent_001_alt) {
 SIGPROC_TEST(Format_sprintf_float_000) {
     {
         std::string expected = "3.14";
+        std::string actual = fmt::sprintf("%f", 3.14F);
+        ASSERT_STR_EQUAL(expected, actual);
+    }
+
+    {
+        std::string expected = "3.14";
+        std::string actual = fmt::sprintf("%.2f", 3.14F);
+        ASSERT_STR_EQUAL(expected, actual);
+    }
+
+    {
+        std::string expected = "3.14";
+        std::string actual = fmt::sprintf("%.2f", 3.1415F);
+        ASSERT_STR_EQUAL(expected, actual);
+    }
+
+    {
+        std::string expected = "1234.567";
+        std::string actual = fmt::sprintf("%.3f", 1234.567F);
+        ASSERT_STR_EQUAL(expected, actual);
+    }
+}
+
+SIGPROC_TEST(Format_sprintf_double_000) {
+    {
+        std::string expected = "3.14";
         std::string actual = fmt::sprintf("%f", 3.14);
         ASSERT_STR_EQUAL(expected, actual);
     }
@@ -93,7 +119,24 @@ SIGPROC_TEST(Format_sprintf_pointer) {
     ASSERT_STR_EQUAL(expected, actual);
 }
 
+SIGPROC_TEST(Format_osprintb_string) {
 
+    {
+        fmt::ovectorstream<char> stream;
+        fmt::osprintb(stream, "TEST");
+        ASSERT_EQUAL(static_cast<size_t>(5), stream.vector().size());
+        ASSERT_STR_EQUAL("TEST", &stream.vector()[0]);
+    }
+
+    {
+        fmt::ovectorstream<char> stream;
+        std::string s("TEST");
+        fmt::osprintb(stream, s);
+        ASSERT_EQUAL(static_cast<size_t>(5), stream.vector().size());
+        ASSERT_STR_EQUAL("TEST", &stream.vector()[0]);
+    }
+
+}
 
 
 

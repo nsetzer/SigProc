@@ -1,0 +1,57 @@
+
+
+#ifndef SIGPROC_BELL_BASE_HPP
+#define SIGPROC_BELL_BASE_HPP
+
+#include <vector>
+#include <iostream>
+#include "sigproc/common/exception.hpp"
+
+namespace sigproc {
+    namespace bell {
+
+enum class TransformKind : char {
+    UNKNOWN = 0,
+    FORWARD = 1,
+    REVERSE = 2,
+    DCTII   = 3
+};
+
+template<typename T>
+class TransformBase
+{
+public:
+    TransformBase() {}
+    virtual ~TransformBase() {}
+
+    virtual size_t size() =0;
+
+    virtual T* inputBegin() =0;
+    virtual T* inputEnd() =0;
+    virtual T* outputBegin() =0;
+    virtual T* outputEnd() =0;
+
+    virtual void execute() =0;
+
+
+};
+
+
+template <typename T>
+TransformBase<T>* newRealTransform(TransformKind kind, size_t Fs, size_t N) {
+    SIGPROC_THROW("invalid transform type");
+}
+
+template <>
+TransformBase<float>* newRealTransform(TransformKind kind, size_t Fs, size_t N);
+
+template <>
+TransformBase<double>* newRealTransform(TransformKind kind, size_t Fs, size_t N);
+
+
+    } // bell
+} // sigproc
+
+std::ostream& operator << (std::ostream& os, const sigproc::bell::TransformKind& kind);
+
+#endif

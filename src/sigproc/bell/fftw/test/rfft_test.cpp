@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "sigproc/common/unittest/unittest.hpp"
+#include "sigproc/bell/base.hpp"
 #include "sigproc/bell/fftw/rfft.hpp"
 
 using namespace sigproc::common;
@@ -26,7 +27,7 @@ SIGPROC_TEST(RFFT_freq)
 {
     size_t iN = 256;
     size_t iFs = 8000;
-    RealFFT fft1(iFs, iN, FFTKind::FORWARD);
+    RealFFT<double> fft1(iFs, iN, sigproc::bell::TransformKind::FORWARD);
 
     double N = static_cast<double>(iN);
     double Fs = static_cast<double>(iFs);
@@ -48,9 +49,9 @@ SIGPROC_TEST(RFFT_linearity)
 {
     size_t N = 256;
     size_t Fs = 8000;
-    RealFFT fft1(Fs, N, FFTKind::FORWARD);
-    RealFFT fft2(Fs, N, FFTKind::FORWARD);
-    RealFFT fft3(Fs, N, FFTKind::FORWARD);
+    RealFFT<double> fft1(Fs, N, sigproc::bell::TransformKind::FORWARD);
+    RealFFT<double> fft2(Fs, N, sigproc::bell::TransformKind::FORWARD);
+    RealFFT<double> fft3(Fs, N, sigproc::bell::TransformKind::FORWARD);
 
     // some arbitrary constants
     double a1 = 1.0/3.0;
