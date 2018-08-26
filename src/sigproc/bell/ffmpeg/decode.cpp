@@ -216,7 +216,7 @@ public:
                     m_dst_nb_samples, m_dst_sample_fmt, 0);
 
             } else{
-                av_freep(*m_dst_data);
+                av_freep(m_dst_data);
                 ret = av_samples_alloc(
                     m_dst_data, &m_dst_linesize, m_dst_nb_channels,
                     m_dst_nb_samples, m_dst_sample_fmt, 1);

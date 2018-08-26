@@ -6,6 +6,15 @@ namespace sigproc {
     namespace bell {
         namespace algorithm {
 
+/*
+
+naive implementation based off of this page:
+https://en.wikipedia.org/wiki/Discrete_cosine_transform
+
+rsplitfft, splitdct algorithm:
+https://arxiv.org/pdf/cs/0703150.pdf
+
+*/
 template<typename T>
 std::vector<T> dctmat_impl(size_t N, size_t k, T freqstep)
 {

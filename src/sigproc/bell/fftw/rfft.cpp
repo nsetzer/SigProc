@@ -20,8 +20,9 @@ class RealFFTImpl
 {
     double* m_data_i;
     double* m_data_o;
-    size_t m_size;
     fftw_plan m_plan;
+    size_t m_size;
+    bool m_magnitude;
 public:
    RealFFTImpl(size_t N, sigproc::bell::TransformKind kind);
    ~RealFFTImpl();
@@ -32,14 +33,13 @@ public:
    double* dataOut() { return m_data_o; }
    double* dataOutEnd() { return m_data_o + m_size; }
 
-   void execute() {
-        fftw_execute(m_plan);
-   }
+   void execute();
 
 };
 
 RealFFTImpl::RealFFTImpl(size_t N, sigproc::bell::TransformKind kind)
     : m_size(N)
+    , m_magnitude(false)
 {
 
     m_data_i = reinterpret_cast<double*>(fftw_malloc(sizeof(double) * m_size));
@@ -48,6 +48,9 @@ RealFFTImpl::RealFFTImpl(size_t N, sigproc::bell::TransformKind kind)
     // http://www.fftw.org/fftw3_doc/Real_002dto_002dReal-Transform-Kinds.html#Real_002dto_002dReal-Transform-Kinds
     fftw_r2r_kind flags = static_cast<fftw_r2r_kind>(0);
     switch (kind) {
+        case sigproc::bell::TransformKind::MAGNITUDE:
+            m_magnitude = true;
+            //fall through
         case sigproc::bell::TransformKind::FORWARD:
             flags = FFTW_R2HC;
             break;
@@ -69,6 +72,26 @@ RealFFTImpl::~RealFFTImpl() {
     fftw_destroy_plan(m_plan);
     fftw_free(m_data_o);
     fftw_free(m_data_i);
+}
+
+void RealFFTImpl::execute() {
+    fftw_execute(m_plan);
+
+    if (m_magnitude) {
+        // todo: clip and log should be options
+        const double clip = 1e-16;
+        const double scale = m_size / 2.0;
+        double* iter = m_data_o;
+        double* end = m_data_o + m_size;
+        while (iter != end) {
+            double v = fabs(*iter) / scale;
+            if (v < clip) {
+                v = clip;
+            }
+            *iter = log(v);
+            iter++;
+        }
+    }
 }
 
 template<typename T>
@@ -136,6 +159,7 @@ bool RealFFT<T>::supports(sigproc::bell::TransformKind kind)
     switch (kind) {
         case sigproc::bell::TransformKind::FORWARD:
         case sigproc::bell::TransformKind::REVERSE:
+        case sigproc::bell::TransformKind::MAGNITUDE:
         case sigproc::bell::TransformKind::DCTII:
             return true;
         default:

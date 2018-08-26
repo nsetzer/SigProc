@@ -11,10 +11,12 @@ namespace sigproc {
     namespace bell {
 
 enum class TransformKind : char {
-    UNKNOWN = 0,
-    FORWARD = 1,
-    REVERSE = 2,
-    DCTII   = 3
+    UNKNOWN      = 0,
+    FORWARD      = 1, // DFT
+    REVERSE      = 2, // Inverse DFT
+    MAGNITUDE    = 3, //forward transform, normalized by N/2
+    LOGMAGNITUDE = 4, // log of forward transform, normalized by N/2
+    DCTII        = 4  //
 };
 
 template<typename T>

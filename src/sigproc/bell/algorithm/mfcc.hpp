@@ -239,7 +239,7 @@ public:
             new FilterBank<T>(Fs, nBin, nFilterBin, minF, maxF, equalize));
 
         m_dft = std::unique_ptr<TransformBase<T>>(
-            newRealTransform<T>(TransformKind::FORWARD, Fs, nBin));
+            newRealTransform<T>(TransformKind::MAGNITUDE, Fs, nBin));
 
         m_dct = std::unique_ptr<TransformBase<T>>(
             newRealTransform<T>(TransformKind::DCTII, Fs, nFilterBin));
@@ -281,22 +281,6 @@ public:
         }
 
         m_dft->execute();
-
-        // convert FFT output to magnitude
-        // TODO: this should be part of the transform
-        // TODO: log should be optional
-        {
-            T* iter = m_dft->outputBegin();
-            T* end = m_dft->outputEnd();
-            while (iter != end) {
-                T v = fabs(*iter) / (nBin/2);
-                if (v < 1e-16) {
-                    v = 1e-16;
-                }
-                *iter = log(v);
-                iter++;
-            }
-        }
 
         if (m_dct) {
             m_filterBank->filter(m_dft->outputBegin(), m_dct->inputBegin());
