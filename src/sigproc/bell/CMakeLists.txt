@@ -50,30 +50,68 @@ set(src_ffmpeg_all
         ${src_ffmpeg_hpp}
     )
 
-find_library(FFMPEG_LIBAVUTIL_PATH avutil
+IF(APPLE)
+    SET(SHARED_SUFFIX "dylib")
+    SET(SHARED_PREFIX "lib")
+ELSEIF(WIN32)
+    SET(SHARED_SUFFIX "dll")
+    SET(SHARED_PREFIX "")
+ELSE()
+    SET(SHARED_SUFFIX "dylib")
+    SET(SHARED_PREFIX "lib")
+ENDIF()
+
+SET(FFMPEG_NOT_OK)
+
+function(find_shared_library varname name paths path)
+    # find third party shared libraries,
+    # resolve symbolic links
+    # copy to build lib directory
+    if (EXISTS "${path}/${SHARED_PREFIX}${name}.${SHARED_SUFFIX}")
+        get_filename_component(libpath "${path}/${SHARED_PREFIX}${name}.${SHARED_SUFFIX}" REALPATH)
+        FILE(COPY "${libpath}" DESTINATION "${PROJECT_BINARY_DIR}/lib")
+        message(info " ${varname}: ${libpath}")
+    else()
+        set(FFMPEG_NOT_OK "TRUE" PARENT_SCOPE)
+        message(warning " ${varname}: ${name} not found")
+    endif()
+    set(${varname} ${libpath} PARENT_SCOPE)
+endfunction()
+
+find_shared_library(FFMPEG_LIBAVUTIL_PATH avutil
     PATHS "${FFMPEG_PATH}/libavutil")
-message(warning " FFMPEG_LIBAVUTIL_PATH: ${FFMPEG_LIBAVUTIL_PATH}")
 
-find_library(FFMPEG_LIBAVCODEC_PATH avcodec
+find_shared_library(FFMPEG_LIBAVCODEC_PATH avcodec
     PATHS "${FFMPEG_PATH}/libavcodec")
-message(warning " FFMPEG_LIBAVCODEC_PATH: ${FFMPEG_LIBAVCODEC_PATH}")
 
-find_library(FFMPEG_LIBAVFORMAT_PATH avformat
+find_shared_library(FFMPEG_LIBAVFORMAT_PATH avformat
     PATHS "${FFMPEG_PATH}/libavformat")
-message(warning " FFMPEG_LIBAVFORMAT_PATH: ${FFMPEG_LIBAVFORMAT_PATH}")
 
-find_library(FFMPEG_LIBSWRESAMPLE_PATH swresample
+find_shared_library(FFMPEG_LIBSWRESAMPLE_PATH swresample
     PATHS "${FFMPEG_PATH}/libswresample")
-message(warning " FFMPEG_LIBSWRESAMPLE_PATH: ${FFMPEG_LIBSWRESAMPLE_PATH}")
 
-find_library(FFMPEG_LIBSWSCALE_PATH swscale
+find_shared_library(FFMPEG_LIBSWSCALE_PATH swscale
     PATHS "${FFMPEG_PATH}/libswscale")
-message(warning " FFMPEG_LIBSWSCALE_PATH: ${FFMPEG_LIBSWSCALE_PATH}")
+
+if (FFMPEG_NOT_OK)
+    # the bulid no longer depends on ffmpeg, but some features may
+    # not work
+    message(error "one or more ffmpeg libraries not found")
+ELSE()
 
 include_directories("${FFMPEG_PATH}")
 
 create_static_library(SigprocBellFFmpeg ${src_ffmpeg_all})
 set_target_properties(SigprocBellFFmpeg PROPERTIES COMPILE_FLAGS "-Wno-old-style-cast")
+
+set(FFMPEG_LIBRARIES
+    SigprocBellFFmpeg
+    ${FFMPEG_LIBSWRESAMPLE_PATH}
+    ${FFMPEG_LIBAVFORMAT_PATH}
+    ${FFMPEG_LIBAVCODEC_PATH}
+    ${FFMPEG_LIBAVUTIL_PATH}
+)
+ENDIF()
 
 ###############################################################################
 # Algorithm
@@ -120,6 +158,11 @@ create_object_library(SigprocBell_object
     ${src_algorithm_all})
 # $<TARGET_OBJECTS:SigprocBell_object>
 
+if(NOT FFMPEG_NOT_OK)
+    set_target_properties(SigprocBell_object PROPERTIES COMPILE_FLAGS "-DUSE_FFMPEG")
+
+endif()
+
 create_shared_library(SigprocBell
     $<TARGET_OBJECTS:SigprocBell_object>
     $<TARGET_OBJECTS:SigprocCommon_object>
@@ -127,15 +170,16 @@ create_shared_library(SigprocBell
 
 target_link_libraries(SigprocBell SigprocBellFFTW)
 target_link_libraries(SigprocBell ${FFTW3_PATH})
-target_link_libraries(SigprocBell SigprocBellFFmpeg)
-target_link_libraries(SigprocBell ${FFMPEG_LIBSWRESAMPLE_PATH})
-target_link_libraries(SigprocBell ${FFMPEG_LIBAVFORMAT_PATH})
-target_link_libraries(SigprocBell ${FFMPEG_LIBAVCODEC_PATH})
-target_link_libraries(SigprocBell ${FFMPEG_LIBAVUTIL_PATH})
+target_link_libraries(SigprocBell ${FFMPEG_LIBRARIES})
+#target_link_libraries(SigprocBell SigprocBellFFmpeg)
+#target_link_libraries(SigprocBell ${FFMPEG_LIBSWRESAMPLE_PATH})
+#target_link_libraries(SigprocBell ${FFMPEG_LIBAVFORMAT_PATH})
+#target_link_libraries(SigprocBell ${FFMPEG_LIBAVCODEC_PATH})
+#target_link_libraries(SigprocBell ${FFMPEG_LIBAVUTIL_PATH})
 target_link_libraries(SigprocBell pthread)
 
 # https://ffmpeg.org/platform.html#Advanced-linking-configuration
-set_target_properties(SigprocBell PROPERTIES LINK_FLAGS "-pie -Wl,-Bdynamic")
+# set_target_properties(SigprocBell PROPERTIES LINK_FLAGS "-pie -Wl,-Bdynamic")
 
 
 function(create_bell_tool name source)
@@ -171,8 +215,8 @@ create_bell_test(zbfilter_test ${BELL_PATH}/algorithm/test/zbfilter_test.cpp)
 create_bell_test(mfcc_test ${BELL_PATH}/algorithm/test/mfcc_test.cpp)
 create_bell_test(dct_test ${BELL_PATH}/algorithm/test/dct_test.cpp)
 
-create_bell_tool(resample ${BELL_PATH}/ffmpeg/tools/resample.cpp)
-create_bell_tool(framegen ${BELL_PATH}/ffmpeg/tools/framegen.cpp)
+create_bell_tool(resample ${BELL_PATH}/tools/resample.cpp)
+create_bell_tool(framegen ${BELL_PATH}/tools/framegen.cpp)
 
 
 

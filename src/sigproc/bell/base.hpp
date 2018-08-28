@@ -10,6 +10,18 @@
 namespace sigproc {
     namespace bell {
 
+
+enum class AudioFormat : char {
+    UNKNOWN = 0,
+    PCMS16LE  = 1, // raw
+    WAV       = 2,
+    MP2       = 3,
+    MP3       = 4,
+    MP4       = 5,
+    M4A       = 6,
+    FLAC      = 7,
+    AAC       = 8,
+};
 template<typename T>
 class AudioDecoderBase
 {
@@ -39,18 +51,18 @@ public:
  * and with the number of channels. The decoder may resample the signal
  */
 template <typename T>
-AudioDecoderBase<T>* newAudioDecoder(std::string file_path, size_t Fs, size_t n_channels) {
+AudioDecoderBase<T>* newAudioDecoderFromPath(std::string file_path, size_t Fs, size_t n_channels) {
     SIGPROC_THROW("invalid decoder type");
 }
 
 template <>
-AudioDecoderBase<uint8_t>* newAudioDecoder(std::string file_path, size_t Fs, size_t n_channels);
+AudioDecoderBase<uint8_t>* newAudioDecoderFromPath(std::string file_path, size_t Fs, size_t n_channels);
 template <>
-AudioDecoderBase<int16_t>* newAudioDecoder(std::string file_path, size_t Fs, size_t n_channels);
+AudioDecoderBase<int16_t>* newAudioDecoderFromPath(std::string file_path, size_t Fs, size_t n_channels);
 template <>
-AudioDecoderBase<float>* newAudioDecoder(std::string file_path, size_t Fs, size_t n_channels);
+AudioDecoderBase<float>* newAudioDecoderFromPath(std::string file_path, size_t Fs, size_t n_channels);
 template <>
-AudioDecoderBase<double>* newAudioDecoder(std::string file_path, size_t Fs, size_t n_channels);
+AudioDecoderBase<double>* newAudioDecoderFromPath(std::string file_path, size_t Fs, size_t n_channels);
 
 /*
  * Return a new audio decoder which supports decoding the given kind

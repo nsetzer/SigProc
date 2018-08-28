@@ -22,6 +22,31 @@ namespace sigproc {
     namespace bell {
         namespace ffmpeg {
 
+namespace {
+
+AVCodecID getFormat(AudioFormat format) {
+
+    switch (format) {
+
+    case AudioFormat::PCMS16LE:
+        return AV_CODEC_ID_PCM_S16LE;
+    case AudioFormat::WAV:
+        return AV_CODEC_ID_ADPCM_IMA_WAV;
+    case AudioFormat::MP2:
+    case AudioFormat::MP3:
+    case AudioFormat::MP4:
+        return AV_CODEC_ID_MP3;
+    case AudioFormat::FLAC:
+        return AV_CODEC_ID_FLAC;
+    case AudioFormat::M4A:
+    case AudioFormat::AAC:
+    case AudioFormat::UNKNOWN:
+    default:
+        SIGPROC_THROW("unsupported format");
+    }
+}
+
+} // anonymous
 template<typename T>
 class BufferedVector
 {
@@ -327,7 +352,7 @@ class DecoderImpl
     int m_output_samplerate;
 
 public:
-    DecoderImpl(int format, int sample_rate, int n_channels)
+    DecoderImpl(AVCodecID format, int sample_rate, int n_channels)
         : m_input_buffer()
         , m_resampler() {
 
@@ -369,8 +394,8 @@ public:
 
 private:
 
-    void set_codec(int format) {
-        m_audio_codec_id = AV_CODEC_ID_MP3;
+    void set_codec(AVCodecID format) {
+        m_audio_codec_id = format;
     }
 
     void init() {
@@ -501,8 +526,8 @@ private:
 };
 
 template <typename T>
-Decoder<T>::Decoder(int format, int sample_rate, int n_channels)
-    : m_impl(new DecoderImpl<T>(format, sample_rate, n_channels))
+Decoder<T>::Decoder(AudioFormat format, int sample_rate, int n_channels)
+    : m_impl(new DecoderImpl<T>(getFormat(format), sample_rate, n_channels))
 {
 }
 

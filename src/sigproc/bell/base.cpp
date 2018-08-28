@@ -3,48 +3,68 @@
 #include "sigproc/bell/base.hpp"
 #include "sigproc/bell/algorithm/dct.hpp"
 #include "sigproc/bell/fftw/rfft.hpp"
-//#include "sigproc/bell/ffmpeg/decode.hpp"
+#include "sigproc/bell/ffmpeg/decode.hpp"
 
 namespace sigproc {
     namespace bell {
 
 using namespace sigproc::bell::fftw;
 
-template<typename T>
-AudioDecoderBase<T>* newAudioDecoderImpl(std::string file_path, size_t Fs, size_t n_channels)
-{
-    return nullptr; // new ffmpeg::Decoder<T>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
+bool hasSuffix (const std::string& str, const std::string& suffix) {
+    if (str.length() >= suffix.length()) {
+        return (0 == str.compare (str.length() - suffix.length(), suffix.length(), suffix));
+    } else {
+        return false;
+    }
 }
-
-template <>
-AudioDecoderBase<uint8_t>* newAudioDecoder(std::string file_path, size_t Fs, size_t n_channels)
-{
-    return newAudioDecoderImpl<uint8_t>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
-}
-
-template <>
-AudioDecoderBase<int16_t>* newAudioDecoder(std::string file_path, size_t Fs, size_t n_channels)
-{
-    return newAudioDecoderImpl<int16_t>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
-}
-
-template <>
-AudioDecoderBase<float>* newAudioDecoder(std::string file_path, size_t Fs, size_t n_channels)
-{
-    return newAudioDecoderImpl<float>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
-}
-
-template <>
-AudioDecoderBase<double>* newAudioDecoder(std::string file_path, size_t Fs, size_t n_channels)
-{
-    return  newAudioDecoderImpl<double>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
-}
-
 
 template<typename T>
-AudioDecoderBase<T>* newAudioDecoderFromKindImpl(std::string file_path, size_t Fs, size_t n_channels)
+AudioDecoderBase<T>* newAudioDecoderFromPathImpl(std::string file_path, size_t Fs, size_t n_channels)
 {
-    return nullptr; // new ffmpeg::Decoder<T>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
+    AudioFormat fmt = AudioFormat::MP3;
+    if (hasSuffix(file_path, ".wav")) {
+        fmt = AudioFormat::WAV;
+    } else if (hasSuffix(file_path, ".flac")) {
+        fmt = AudioFormat::FLAC;
+    }
+    #ifdef USE_FFMPEG
+        return new ffmpeg::Decoder<T>(fmt, static_cast<int>(Fs), static_cast<int>(n_channels));
+    #endif
+    SIGPROC_THROW("decoder not supported for: " << file_path);
+}
+
+template <>
+AudioDecoderBase<uint8_t>* newAudioDecoderFromPath(std::string file_path, size_t Fs, size_t n_channels)
+{
+    return newAudioDecoderFromPathImpl<uint8_t>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
+}
+
+template <>
+AudioDecoderBase<int16_t>* newAudioDecoderFromPath(std::string file_path, size_t Fs, size_t n_channels)
+{
+    return newAudioDecoderFromPathImpl<int16_t>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
+}
+
+template <>
+AudioDecoderBase<float>* newAudioDecoderFromPath(std::string file_path, size_t Fs, size_t n_channels)
+{
+    return newAudioDecoderFromPathImpl<float>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
+}
+
+template <>
+AudioDecoderBase<double>* newAudioDecoderFromPath(std::string file_path, size_t Fs, size_t n_channels)
+{
+    return  newAudioDecoderFromPathImpl<double>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
+}
+
+
+template<typename T>
+AudioDecoderBase<T>* newAudioDecoderFromKindImpl(std::string kind, size_t Fs, size_t n_channels)
+{
+    #ifdef USE_FFMPEG
+        return new ffmpeg::Decoder<T>(AudioFormat::MP3, static_cast<int>(Fs), static_cast<int>(n_channels));
+    #endif
+    SIGPROC_THROW("decoder not supported for: " << kind);
 }
 
 template <>

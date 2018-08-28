@@ -34,7 +34,7 @@ class Decoder : public AudioDecoderBase<T>
 {
     std::unique_ptr<DecoderImpl<T>> m_impl;
 public:
-    Decoder(int format, int sample_rate, int n_channels);
+    Decoder(AudioFormat format, int sample_rate, int n_channels);
     ~Decoder();
 
     // push bytes from a file (wav, mp3, flac, etc)
