@@ -3,11 +3,74 @@
 #include "sigproc/bell/base.hpp"
 #include "sigproc/bell/algorithm/dct.hpp"
 #include "sigproc/bell/fftw/rfft.hpp"
+//#include "sigproc/bell/ffmpeg/decode.hpp"
 
 namespace sigproc {
     namespace bell {
 
 using namespace sigproc::bell::fftw;
+
+template<typename T>
+AudioDecoderBase<T>* newAudioDecoderImpl(std::string file_path, size_t Fs, size_t n_channels)
+{
+    return nullptr; // new ffmpeg::Decoder<T>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
+}
+
+template <>
+AudioDecoderBase<uint8_t>* newAudioDecoder(std::string file_path, size_t Fs, size_t n_channels)
+{
+    return newAudioDecoderImpl<uint8_t>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
+}
+
+template <>
+AudioDecoderBase<int16_t>* newAudioDecoder(std::string file_path, size_t Fs, size_t n_channels)
+{
+    return newAudioDecoderImpl<int16_t>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
+}
+
+template <>
+AudioDecoderBase<float>* newAudioDecoder(std::string file_path, size_t Fs, size_t n_channels)
+{
+    return newAudioDecoderImpl<float>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
+}
+
+template <>
+AudioDecoderBase<double>* newAudioDecoder(std::string file_path, size_t Fs, size_t n_channels)
+{
+    return  newAudioDecoderImpl<double>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
+}
+
+
+template<typename T>
+AudioDecoderBase<T>* newAudioDecoderFromKindImpl(std::string file_path, size_t Fs, size_t n_channels)
+{
+    return nullptr; // new ffmpeg::Decoder<T>(0, static_cast<int>(Fs), static_cast<int>(n_channels));
+}
+
+template <>
+AudioDecoderBase<uint8_t>* newAudioDecoderFromKind(std::string kind, size_t Fs, size_t n_channels)
+{
+    return newAudioDecoderFromKindImpl<uint8_t>(kind, Fs, n_channels);
+}
+
+template <>
+AudioDecoderBase<int16_t>* newAudioDecoderFromKind(std::string kind, size_t Fs, size_t n_channels)
+{
+    return newAudioDecoderFromKindImpl<int16_t>(kind, Fs, n_channels);
+}
+
+template <>
+AudioDecoderBase<float>* newAudioDecoderFromKind(std::string kind, size_t Fs, size_t n_channels)
+{
+    return newAudioDecoderFromKindImpl<float>(kind, Fs, n_channels);
+}
+
+template <>
+AudioDecoderBase<double>* newAudioDecoderFromKind(std::string kind, size_t Fs, size_t n_channels)
+{
+    return newAudioDecoderFromKindImpl<double>(kind, Fs, n_channels);
+}
+
 
 template <>
 TransformBase<float>* newRealTransform<float>(TransformKind kind, size_t Fs, size_t N)

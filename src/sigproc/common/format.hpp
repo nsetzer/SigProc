@@ -431,6 +431,14 @@ std::string sprintf(const std::string& fmtstr, const T head, const U... rest)
     return ss.str();
 }
 
+void printf(const std::string& fmtstr);
+
+template<typename... U>
+void printf(const std::string& fmtstr, const U... rest)
+{
+    osprintf(std::cout, 0, fmtstr, rest...);
+}
+
 template<typename T>
 size_t osprintb(std::ostream& os, const T* value) {
     os.write(static_cast<const char*>(value), sizeof(T));

@@ -48,7 +48,7 @@ void write_wave_header(int16_t num_channels, int32_t sample_rate, std::ostream& 
     fwrite(fout, &kDataSize);
 }
 
-void resample(std::istream* fin, std::ostream* fout, ffmpeg::Decoder& decoder)
+void resample(std::istream* fin, std::ostream* fout, ffmpeg::Decoder<uint8_t>& decoder)
 {
     constexpr size_t data_capacity = 2048;
     uint8_t data[data_capacity];
@@ -58,10 +58,11 @@ void resample(std::istream* fin, std::ostream* fout, ffmpeg::Decoder& decoder)
         fin->read(reinterpret_cast<char*>(data), data_capacity);
         decoder.push_data(data, fin->gcount());
 
-        if (decoder.output_size()>0) {
-            fout->write(reinterpret_cast<const char*>(decoder.output_data()),
-                        decoder.output_size());
-            decoder.output_erase(decoder.output_size());
+        size_t n_elements = decoder.output_size(0);
+        if (n_elements>0) {
+            fout->write(reinterpret_cast<const char*>(decoder.output_data(0)),
+                        n_elements);
+            decoder.output_erase(0, n_elements);
         }
     }
 }
@@ -86,7 +87,7 @@ int main(int argc, char* argv[])
     }
 
     try {
-        ffmpeg::Decoder decoder(0, 16000, 1);
+        ffmpeg::Decoder<uint8_t> decoder(0, 16000, 1);
 
         write_wave_header(1, 16000, *fout);
         resample(fin, fout, decoder);
@@ -105,3 +106,5 @@ int main(int argc, char* argv[])
         delete fout;
     }
 }
+
+

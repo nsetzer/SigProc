@@ -27,7 +27,9 @@ get the latest version of ffmpeg
 
 configure and build
 
-    ./configure
+
+
+    ./configure --enable-shared --enable-pic
     make -j 4
 
 ## FFTW

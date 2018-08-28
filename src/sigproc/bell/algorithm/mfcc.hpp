@@ -258,13 +258,23 @@ public:
 
     // return the number of elements consumed (0 or nWindow)
     // out will be resize to nFilterBin
-    size_t filter(const std::vector<T>& in, std::vector<T>& out) {
+    size_t filter(const std::vector<T>& dataIn, std::vector<T>& dataOut) {
+        size_t nFilterBin = 40;
+        dataOut.resize(nFilterBin);
+        return filter(&dataIn[0], &dataOut[0]);
+    }
+
+    size_t filter(const T* pDataIn, std::vector<T>& dataOut) {
+        size_t nFilterBin = 40;
+        dataOut.resize(nFilterBin);
+        return filter(pDataIn, &dataOut[0]);
+    }
+
+    size_t filter(const T* pDataIn, T* pDataOut) {
         size_t Fs = 16000;
         size_t nWindow = 448;
         size_t nBin = 512;
         size_t nFilterBin = 40;
-
-        out.resize(nFilterBin);
 
         //copy input into the transform
         // apply pre-emph filter and window function
@@ -272,7 +282,7 @@ public:
             size_t i=0;
             T* inputIter = m_dft->inputBegin();
             for (;i < m_window.size(); i++) {
-                *inputIter++ = m_preEmph.apply(in[i]) * (m_window[i]);
+                *inputIter++ = m_preEmph.apply(pDataIn[i]) * (m_window[i]);
             }
             // zero pad to the full size
             for (; i < m_dft->size(); i++) {
@@ -288,16 +298,15 @@ public:
             // TODO: optionally should not copy the entire output.
             //       e.g. compute 26 DCT bins and only keep the first 13
             //       keeping the DC bin should also be an option
-            std::copy(m_dct->outputBegin(), m_dct->outputEnd(), out.begin());
+            std::copy(m_dct->outputBegin(), m_dct->outputEnd(), pDataOut);
         } else {
-            m_filterBank->filter(m_dft->outputBegin(), &out[0]);
+            m_filterBank->filter(m_dft->outputBegin(), pDataOut);
         }
 
         return 0;
     }
 
 
-private:
 };
 
             } // mfcc

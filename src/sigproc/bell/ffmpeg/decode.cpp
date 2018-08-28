@@ -3,7 +3,10 @@
 #include <vector>
 
 #include "sigproc/bell/ffmpeg/decode.hpp"
+#include "sigproc/common/format.hpp"
 #include "sigproc/common/exception.hpp"
+
+using namespace sigproc::common;
 
 extern "C"
 {
@@ -34,7 +37,7 @@ public:
     const T* data() const { return &m_data[m_index]; }
     size_t size() const { return m_data.size() - m_index; }
 
-    void push_back(T* data, size_t n_elements) {
+    void push_back(const T* data, size_t n_elements) {
         // free memory that has been consumed
         if (m_index > 0) {
             m_data.erase(m_data.begin(), m_data.begin() + m_index);
@@ -53,26 +56,6 @@ public:
         }
     }
 
-    // return a pointer to a memory buffer that the contains
-    // at least n_elements which can be directly written to.
-    /*
-    T* data_frame(size_t n_elements) {
-        // free memory that has been consumed
-        if (m_index > 0) {
-            m_data.erase(m_data.begin(), m_data.begin() + m_index);
-            m_index = 0;
-        }
-        // increase capactity to hold new data
-        size_t n = m_data.size();
-        size_t cap = n + n_elements;
-        m_data.reserve( cap );
-        std::cout << "before: " << m_data.size();
-        m_data.resize(cap);
-        std::cout << "  after: " << m_data.size() << std::endl;
-        return &m_data[n];
-    }
-    */
-
     void erase(size_t n_elements) {
         m_index += n_elements;
     }
@@ -84,6 +67,88 @@ public:
 
 };
 
+template<typename T>
+enum AVSampleFormat get_sample_format() {
+    SIGPROC_THROW("unsupported type");
+}
+
+// return interleaved PCM data
+template<>
+enum AVSampleFormat get_sample_format<uint8_t>() {
+    return AV_SAMPLE_FMT_S16;
+}
+
+// return planar 16 bit data
+template<>
+enum AVSampleFormat get_sample_format<int16_t>() {
+    return AV_SAMPLE_FMT_S16P;
+}
+
+template<>
+enum AVSampleFormat get_sample_format<float>() {
+    return AV_SAMPLE_FMT_FLTP;
+}
+
+template<>
+enum AVSampleFormat get_sample_format<double>() {
+    return AV_SAMPLE_FMT_DBLP;
+}
+
+/*
+ * template traits method for pushing samples to a set of buffers
+ *
+ * buffers: a set of channel separated buffers to push to.
+ * nb_channels: number of channels, also length of buffers vector
+ * linesize: number of bytes per channel plane
+ * data: raw pointer to buffer data
+ * datalen: number of bytes available in data
+ */
+template<typename T>
+void push_samples(std::vector<BufferedVector<T>>& buffers, int nb_channels, int linesize, const uint8_t* data, int datalen)
+{
+    SIGPROC_THROW("unsupported type");
+}
+
+template<>
+void push_samples<uint8_t>(std::vector<BufferedVector<uint8_t>>& buffers, int nb_channels, int linesize, const uint8_t* data, int datalen)
+{
+    // TODO channels are intentionally ignored for this type
+    // write some documentation,
+    // use a traits function for allocating the buffer array correctly
+    std::cout << " uint8_t linesize: " << linesize << " channels: " << nb_channels << " data_size: " << datalen << std::endl;
+    buffers[0].push_back(data, datalen);
+}
+
+template<>
+void push_samples<int16_t>(std::vector<BufferedVector<int16_t>>& buffers, int nb_channels, int linesize, const uint8_t* data, int datalen)
+{
+    // TODO channels are ignored for this type, and they should not be
+    const int16_t* cdata = reinterpret_cast<const int16_t*>(data);
+    int datasize = datalen / sizeof(int16_t);
+    buffers[0].push_back(cdata, datasize);
+}
+
+template<>
+void push_samples<float>(std::vector<BufferedVector<float>>& buffers, int nb_channels, int linesize, const uint8_t* data, int datalen)
+{
+    // TODO channels are ignored for this type, and they should not be
+    const float* cdata = reinterpret_cast<const float*>(data);
+    int datasize = datalen / sizeof(float);
+    buffers[0].push_back(cdata, datasize);
+}
+
+template<>
+void push_samples<double>(std::vector<BufferedVector<double>>& buffers, int nb_channels, int linesize, const uint8_t* data, int datalen)
+{
+    // TODO channels are ignored for this type, and they should not be
+    std::cout << " double linesize: " << linesize << " channels: " << nb_channels << " data_size: " << datalen << std::endl;
+    const double* cdata = reinterpret_cast<const double*>(data);
+    int datasize = datalen / sizeof(double);
+    buffers[0].push_back(cdata, datasize);
+}
+
+
+template <typename T>
 class ResamplerImpl
 {
     int64_t m_src_ch_layout;
@@ -118,8 +183,9 @@ public:
         m_dst_ch_layout = AV_CH_LAYOUT_MONO;
         m_src_nb_channels = 0;
         m_dst_nb_channels = 0;
+        // source sample format is set by the decoder
         m_src_sample_fmt = AV_SAMPLE_FMT_FLTP;
-        m_dst_sample_fmt = AV_SAMPLE_FMT_S16;
+        m_dst_sample_fmt = get_sample_format<T>();
         m_src_rate = 0;
         m_dst_rate = 0;
         m_dst_linesize = 0;
@@ -191,7 +257,7 @@ public:
         return m_swr_ctx != nullptr;
     }
 
-    size_t resample(AVFrame *frame, BufferedVector<uint8_t>& buffer) {
+    size_t resample(AVFrame *frame, std::vector<BufferedVector<T>>& buffers) {
         int ret;
 
         if (m_src_rate==0) {
@@ -233,16 +299,18 @@ public:
             throw std::runtime_error("convert");
         }
 
+
         int dst_bufsize = av_samples_get_buffer_size(
             &m_dst_linesize, m_dst_nb_channels, ret, m_dst_sample_fmt, 1);
 
-        buffer.push_back(*m_dst_data, dst_bufsize);
+        push_samples<T>(buffers, m_dst_nb_channels, m_dst_linesize, *m_dst_data, dst_bufsize);
 
         return dst_bufsize;
     }
 
 };
 
+template <typename T>
 class DecoderImpl
 {
     const AVCodec* m_codec = NULL;
@@ -251,9 +319,9 @@ class DecoderImpl
     AVFrame* m_decoded_frame = NULL;
     AVPacket* m_pkt = NULL;
     BufferedVector<uint8_t> m_input_buffer;
-    BufferedVector<uint8_t> m_output_buffer;
+    std::vector<BufferedVector<T>> m_output_buffer;
 
-    ResamplerImpl m_resampler;
+    ResamplerImpl<T> m_resampler;
     AVCodecID m_audio_codec_id;
     int m_output_channels;
     int m_output_samplerate;
@@ -261,8 +329,9 @@ class DecoderImpl
 public:
     DecoderImpl(int format, int sample_rate, int n_channels)
         : m_input_buffer()
-        , m_output_buffer()
         , m_resampler() {
+
+        m_output_buffer.resize(n_channels);
 
         // these are the three parameters that MUST be set by the user
         // a helper function could be written, given a filepath
@@ -277,14 +346,15 @@ public:
         release();
     }
 
-
-
     void push_data(uint8_t* data, size_t n_elements) {
         m_input_buffer.push_back(data, n_elements);
     }
 
-    BufferedVector<uint8_t>& output() {
-        return m_output_buffer;
+    BufferedVector<T>& output(size_t index) {
+        if (index >= static_cast<size_t>(m_output_channels)) {
+            SIGPROC_THROW("invalid channel index: " << index);
+        }
+        return m_output_buffer[index];
     }
 
     void decode() {
@@ -430,35 +500,41 @@ private:
     }
 };
 
-Decoder::Decoder(int format, int sample_rate, int n_channels)
-    : m_impl(new DecoderImpl(format, sample_rate, n_channels))
+template <typename T>
+Decoder<T>::Decoder(int format, int sample_rate, int n_channels)
+    : m_impl(new DecoderImpl<T>(format, sample_rate, n_channels))
 {
 }
 
-Decoder::~Decoder()
+template <typename T>
+Decoder<T>::~Decoder()
 {
 
 }
 
-void Decoder::push_data(uint8_t* data, size_t n_elements)
+template <typename T>
+void Decoder<T>::push_data(uint8_t* data, size_t n_elements)
 {
     m_impl->push_data(data, n_elements);
     m_impl->decode();
 }
 
-size_t Decoder::output_size() const
+template <typename T>
+size_t Decoder<T>::output_size(size_t index) const
 {
-    return m_impl->output().size();
+    return m_impl->output(index).size();
 }
 
-const uint8_t* Decoder::output_data() const
+template <typename T>
+const T* Decoder<T>::output_data(size_t index) const
 {
-    return m_impl->output().data();
+    return m_impl->output(index).data();
 }
 
-void Decoder::output_erase(size_t n_elements)
+template <typename T>
+void Decoder<T>::output_erase(size_t index, size_t n_elements)
 {
-    m_impl->output().erase(n_elements);
+    m_impl->output(index).erase(n_elements);
 }
 
 
@@ -479,6 +555,11 @@ public:
 };
 
 FFmpegInit _init;
+
+template class Decoder<uint8_t>;
+template class Decoder<int16_t>;
+template class Decoder<float>;
+template class Decoder<double>;
 
         } // ffmpeg
     } // bell

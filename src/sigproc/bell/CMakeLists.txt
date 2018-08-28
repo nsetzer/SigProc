@@ -134,6 +134,10 @@ target_link_libraries(SigprocBell ${FFMPEG_LIBAVCODEC_PATH})
 target_link_libraries(SigprocBell ${FFMPEG_LIBAVUTIL_PATH})
 target_link_libraries(SigprocBell pthread)
 
+# https://ffmpeg.org/platform.html#Advanced-linking-configuration
+set_target_properties(SigprocBell PROPERTIES LINK_FLAGS "-pie -Wl,-Bdynamic")
+
+
 function(create_bell_tool name source)
 
     add_executable("${name}"

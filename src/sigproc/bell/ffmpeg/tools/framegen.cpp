@@ -50,7 +50,7 @@ void write_wave_header(int16_t num_channels, int32_t sample_rate, std::ostream& 
 }
 
 void do_framegen(std::istream* fin, std::ostream* fout,
-    ffmpeg::Decoder& decoder, algorithm::mfcc::FeatureGenerator<double>& frameGen)
+    ffmpeg::Decoder<double>& decoder, algorithm::mfcc::FeatureGenerator<double>& frameGen)
 {
     constexpr size_t data_capacity = 2048;
     uint8_t data[data_capacity];
@@ -74,15 +74,22 @@ void do_framegen(std::istream* fin, std::ostream* fout,
         fin->read(reinterpret_cast<char*>(data), data_capacity);
         decoder.push_data(data, fin->gcount());
 
-        while (decoder.output_size()/2 >= frameGen.windowSize()) {
-            const int16_t* idata = reinterpret_cast<const int16_t*>(decoder.output_data());
-            for (size_t i=0; i<frameGen.windowSize(); i++) {
-                fdata[i] = idata[i]/32768.0;
+        //while (decoder.output_size(0)/2 >= frameGen.windowSize()) {
+        //    const int16_t* idata = reinterpret_cast<const int16_t*>(decoder.output_data(0));
+        //    for (size_t i=0; i<frameGen.windowSize(); i++) {
+        //        fdata[i] = idata[i]/32768.0;
+        //    }
+        //    frameGen.filter(fdata, frame);
+        //    decoder.output_erase(0, frameGen.frameStep()*sizeof(int16_t));
+        while (decoder.output_size(0) >= frameGen.windowSize()) {
+            const double* data = decoder.output_data(0);
+            double total = 0.0;
+            for (size_t i =0; i < decoder.output_size(0); i ++) {
+                total += data[i] * data[i];
             }
+            frameGen.filter(decoder.output_data(0), frame);
+            decoder.output_erase(0, frameGen.frameStep());
 
-            frameGen.filter(fdata, frame);
-
-            decoder.output_erase(frameGen.frameStep()*2);
             count ++;
 
             fout->write(reinterpret_cast<const char*>(&frame[0]),
@@ -113,7 +120,7 @@ int main(int argc, char* argv[])
     }
 
     try {
-        ffmpeg::Decoder decoder(0, 16000, 1);
+        ffmpeg::Decoder<double> decoder(0, 16000, 1);
         algorithm::mfcc::FeatureGenerator<double> frameGen;
 
         do_framegen(fin, fout, decoder, frameGen);

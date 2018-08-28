@@ -32,6 +32,11 @@ std::string sprintf(const std::string& fmtstr)
     return replace(fmtstr, "%%", "%");
 }
 
+void printf(const std::string& fmtstr)
+{
+    osprintf(std::cout, 0, fmtstr);
+}
+
 template<>
 size_t osprintb<char>(std::ostream& os, const char* value)
 {
