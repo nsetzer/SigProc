@@ -11,6 +11,8 @@ namespace sigproc {
     namespace bell {
         namespace ffmpeg {
 
+void getFileCodecKind(const char* filepath);
+
 template <typename T>
 class DecoderImpl;
 

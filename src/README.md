@@ -27,10 +27,12 @@ get the latest version of ffmpeg
 
 configure and build
 
-
-
     ./configure --enable-shared --enable-pic
     make -j 4
+
+more info:
+
+    https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu
 
 ## FFTW
 

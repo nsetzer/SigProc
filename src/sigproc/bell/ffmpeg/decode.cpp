@@ -31,7 +31,7 @@ AVCodecID getFormat(AudioFormat format) {
     case AudioFormat::PCMS16LE:
         return AV_CODEC_ID_PCM_S16LE;
     case AudioFormat::WAV:
-        return AV_CODEC_ID_ADPCM_IMA_WAV;
+        return AV_CODEC_ID_PCM_S16LE;
     case AudioFormat::MP2:
     case AudioFormat::MP3:
     case AudioFormat::MP4:
@@ -42,7 +42,7 @@ AVCodecID getFormat(AudioFormat format) {
     case AudioFormat::AAC:
     case AudioFormat::UNKNOWN:
     default:
-        SIGPROC_THROW("unsupported format");
+        SIGPROC_THROW("ffmpeg: unsupported format");
     }
 }
 
@@ -92,9 +92,54 @@ public:
 
 };
 
+void getFileCodecKind(const char* filepath) {
+    // https://rodic.fr/blog/libavcodec-tutorial-decode-audio-file/
+
+    int err=0;
+    AVInputFormat *iformat = nullptr;
+    AVFormatContext *fmt_ctx = NULL;
+    AVDictionary *format_opts = NULL;
+    AVCodecID audio_codec_id = AV_CODEC_ID_NONE;
+
+    fmt_ctx = avformat_alloc_context();
+    if (!fmt_ctx) {
+        std::cerr << "failed to allocate context" << std::endl;
+        avformat_free_context(fmt_ctx);
+        return;
+    }
+
+    if ((err = avformat_open_input(
+        &fmt_ctx, filepath, iformat, &format_opts)) < 0) {
+        std::cerr << "failed  open input context: " << err << std::endl;
+        avformat_free_context(fmt_ctx);
+        return;
+    }
+
+    iformat = fmt_ctx->iformat;
+
+    if (iformat==nullptr) {
+        std::cerr << "no format:" << std::endl;
+        avformat_free_context(fmt_ctx);
+        return;
+    }
+
+    std::cout << "flags: " << iformat->flags << std::endl;
+    std::cout << "name: " << iformat->name << std::endl;
+    std::cout << "long_name: " << iformat->long_name << std::endl;
+    std::cout << "audio_codec_id: " << fmt_ctx->audio_codec_id << std::endl;
+
+    for (size_t i = 0; i < fmt_ctx->nb_streams; ++i) {
+        AVCodecContext* tc = fmt_ctx->streams[i]->codec;
+        std::cout << "codec_type: " << tc->codec_type << std::endl;
+        std::cout << "codec_id: " << tc->codec_id << std::endl;
+    }
+
+    avformat_free_context(fmt_ctx);
+}
+
 template<typename T>
 enum AVSampleFormat get_sample_format() {
-    SIGPROC_THROW("unsupported type");
+    SIGPROC_THROW("ffmpeg: unsupported type");
 }
 
 // return interleaved PCM data
@@ -131,7 +176,7 @@ enum AVSampleFormat get_sample_format<double>() {
 template<typename T>
 void push_samples(std::vector<BufferedVector<T>>& buffers, int nb_channels, int linesize, const uint8_t* data, int datalen)
 {
-    SIGPROC_THROW("unsupported type");
+    SIGPROC_THROW("ffmpeg: unsupported type");
 }
 
 template<>
@@ -140,7 +185,7 @@ void push_samples<uint8_t>(std::vector<BufferedVector<uint8_t>>& buffers, int nb
     // TODO channels are intentionally ignored for this type
     // write some documentation,
     // use a traits function for allocating the buffer array correctly
-    std::cout << " uint8_t linesize: " << linesize << " channels: " << nb_channels << " data_size: " << datalen << std::endl;
+    //std::cout << " uint8_t linesize: " << linesize << " channels: " << nb_channels << " data_size: " << datalen << std::endl;
     buffers[0].push_back(data, datalen);
 }
 
@@ -166,7 +211,7 @@ template<>
 void push_samples<double>(std::vector<BufferedVector<double>>& buffers, int nb_channels, int linesize, const uint8_t* data, int datalen)
 {
     // TODO channels are ignored for this type, and they should not be
-    std::cout << " double linesize: " << linesize << " channels: " << nb_channels << " data_size: " << datalen << std::endl;
+    //std::cout << " double linesize: " << linesize << " channels: " << nb_channels << " data_size: " << datalen << std::endl;
     const double* cdata = reinterpret_cast<const double*>(data);
     int datasize = datalen / sizeof(double);
     buffers[0].push_back(cdata, datasize);
@@ -227,7 +272,7 @@ public:
         }
         m_src_rate = frame->sample_rate;
         if (m_src_rate < 100) {
-            SIGPROC_THROW("source rate lower than expected: " << m_src_rate);
+            SIGPROC_THROW("ffmpeg: source rate lower than expected: " << m_src_rate);
         }
         m_src_ch_layout = (m_src_nb_channels==2)?AV_CH_LAYOUT_STEREO:AV_CH_LAYOUT_MONO;
         m_src_sample_fmt = static_cast<AVSampleFormat>(frame->format);
@@ -241,7 +286,7 @@ public:
         }
         m_dst_rate = sample_rate;
         if (m_dst_rate < 100) {
-            SIGPROC_THROW("source rate lower than expected: " << m_src_rate);
+            SIGPROC_THROW("ffmpeg: source rate lower than expected: " << m_src_rate);
         }
         m_dst_ch_layout = (n_channels==2)?AV_CH_LAYOUT_STEREO:AV_CH_LAYOUT_MONO;
     }
@@ -286,15 +331,15 @@ public:
         int ret;
 
         if (m_src_rate==0) {
-            SIGPROC_THROW("source rate not initialized");
+            SIGPROC_THROW("ffmpeg: source rate not initialized");
         }
 
         if (m_dst_rate==0) {
-            SIGPROC_THROW("destination rate not initialized");
+            SIGPROC_THROW("ffmpeg: destination rate not initialized");
         }
 
         if (m_swr_ctx==nullptr) {
-            SIGPROC_THROW("context not configured");
+            SIGPROC_THROW("ffmpeg: context not configured");
         }
 
         // check if we need to reallocate space for the output
@@ -377,7 +422,7 @@ public:
 
     BufferedVector<T>& output(size_t index) {
         if (index >= static_cast<size_t>(m_output_channels)) {
-            SIGPROC_THROW("invalid channel index: " << index);
+            SIGPROC_THROW("ffmpeg: invalid channel index: " << index);
         }
         return m_output_buffer[index];
     }
@@ -403,19 +448,19 @@ private:
         m_codec = avcodec_find_decoder(m_audio_codec_id);
         if (!m_codec) {
             release();
-            SIGPROC_THROW("failed to find codec for: " << m_audio_codec_id);
+            SIGPROC_THROW("ffmpeg: failed to find codec for: " << m_audio_codec_id);
         }
 
         m_codec_ctx = avcodec_alloc_context3(m_codec);
         if (!m_codec_ctx) {
             release();
-            throw std::runtime_error("codec_ctx");
+            SIGPROC_THROW("ffmpeg: codec_ctx");
         }
 
         m_pkt = av_packet_alloc();
         if (!m_pkt) {
             release();
-            throw std::runtime_error("packet");
+            SIGPROC_THROW("ffmpeg: packet");
         }
 
         av_init_packet(m_pkt);
@@ -423,12 +468,12 @@ private:
         m_parser = av_parser_init(m_codec->id);
         if (!m_parser) {
             release();
-            throw std::runtime_error("parser");
+            SIGPROC_THROW("ffmpeg: parser " << m_codec->id);
         }
 
         if (avcodec_open2(m_codec_ctx, m_codec, NULL) < 0) {
             release();
-            throw std::runtime_error("open2");
+            SIGPROC_THROW("ffmpeg: open2");
         }
 
     }

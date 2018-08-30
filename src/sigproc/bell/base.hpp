@@ -51,18 +51,18 @@ public:
  * and with the number of channels. The decoder may resample the signal
  */
 template <typename T>
-AudioDecoderBase<T>* newAudioDecoderFromPath(std::string file_path, size_t Fs, size_t n_channels) {
+AudioDecoderBase<T>* newAudioDecoderFromPath(const std::string& file_path, size_t Fs, size_t n_channels) {
     SIGPROC_THROW("invalid decoder type");
 }
 
 template <>
-AudioDecoderBase<uint8_t>* newAudioDecoderFromPath(std::string file_path, size_t Fs, size_t n_channels);
+AudioDecoderBase<uint8_t>* newAudioDecoderFromPath(const std::string& file_path, size_t Fs, size_t n_channels);
 template <>
-AudioDecoderBase<int16_t>* newAudioDecoderFromPath(std::string file_path, size_t Fs, size_t n_channels);
+AudioDecoderBase<int16_t>* newAudioDecoderFromPath(const std::string& file_path, size_t Fs, size_t n_channels);
 template <>
-AudioDecoderBase<float>* newAudioDecoderFromPath(std::string file_path, size_t Fs, size_t n_channels);
+AudioDecoderBase<float>* newAudioDecoderFromPath(const std::string& file_path, size_t Fs, size_t n_channels);
 template <>
-AudioDecoderBase<double>* newAudioDecoderFromPath(std::string file_path, size_t Fs, size_t n_channels);
+AudioDecoderBase<double>* newAudioDecoderFromPath(const std::string& file_path, size_t Fs, size_t n_channels);
 
 /*
  * Return a new audio decoder which supports decoding the given kind
@@ -74,18 +74,18 @@ AudioDecoderBase<double>* newAudioDecoderFromPath(std::string file_path, size_t 
  * and with the number of channels. The decoder may resample the signal
  */
 template <typename T>
-AudioDecoderBase<T>* newAudioDecoderFromKind(std::string kind, size_t Fs, size_t n_channels) {
+AudioDecoderBase<T>* newAudioDecoderFromKind(const std::string& file_path, size_t Fs, size_t n_channels) {
     SIGPROC_THROW("invalid decoder type");
 }
 
 template <>
-AudioDecoderBase<uint8_t>* newAudioDecoderFromKind(std::string kind, size_t Fs, size_t n_channels);
+AudioDecoderBase<uint8_t>* newAudioDecoderFromKind(const std::string& file_path, size_t Fs, size_t n_channels);
 template <>
-AudioDecoderBase<int16_t>* newAudioDecoderFromKind(std::string kind, size_t Fs, size_t n_channels);
+AudioDecoderBase<int16_t>* newAudioDecoderFromKind(const std::string& file_path, size_t Fs, size_t n_channels);
 template <>
-AudioDecoderBase<float>* newAudioDecoderFromKind(std::string kind, size_t Fs, size_t n_channels);
+AudioDecoderBase<float>* newAudioDecoderFromKind(const std::string& file_path, size_t Fs, size_t n_channels);
 template <>
-AudioDecoderBase<double>* newAudioDecoderFromKind(std::string kind, size_t Fs, size_t n_channels);
+AudioDecoderBase<double>* newAudioDecoderFromKind(const std::string& file_path, size_t Fs, size_t n_channels);
 
 
 enum class TransformKind : char {
