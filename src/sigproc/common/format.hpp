@@ -53,11 +53,16 @@ namespace sigproc {
 template <typename charT, typename traits=std::char_traits<charT> >
 class vectorstreambuf : public std::basic_streambuf<charT, traits>
 {
+    size_t m_index = 0;
     std::vector<charT> m_buffer;
 public:
     vectorstreambuf() {}
+    vectorstreambuf(const std::vector<charT>& vector)
+        : m_buffer(vector) //todo: consider shared pointers
+    {}
     ~vectorstreambuf() {}
 
+    // write a character to the stream
     int overflow (int c = traits::eof())
     {
         if (c != traits::eof()) {
@@ -66,15 +71,17 @@ public:
         return traits::to_int_type( c );
     }
 
+    // read a character from the stream
     int underflow()
     {
-        // implement for reading from a char vector
-        return traits::eof();
-        //if (m_buffer.size()==0) {
-        //    return traits::eof();
-        //}
-        //int c = m_buffer.front();
-        //return traits::to_int_type(c);
+        if (m_buffer.size()==0 || m_index==m_buffer.size()) {
+            return traits::eof();
+        }
+        charT* begin = &m_buffer[m_index];
+        charT* end = &m_buffer[m_buffer.size()];
+        this->setg(begin, begin, end);
+        m_index = m_buffer.size();
+        return traits::to_int_type(*this->gptr());
     }
 
     int sync()
@@ -100,6 +107,35 @@ public:
     ovectorstream()
       : std::basic_ostream<charT, traits>::basic_ostream(&m_buffer)
       , m_buffer()
+    {}
+
+    ovectorstream(const std::vector<charT>& vector)
+      : std::basic_ostream<charT, traits>::basic_ostream(&m_buffer)
+      , m_buffer(vector)
+    {}
+
+    std::vector<charT>& vector() {
+        return m_buffer.vector();
+    }
+};
+
+template<typename charT, typename traits=std::char_traits<charT>>
+class ivectorstream :
+    public std::basic_istream<charT, traits>
+{
+private:
+    vectorstreambuf<charT, traits> m_buffer;
+
+public:
+
+    ivectorstream()
+      : std::basic_istream<charT, traits>::basic_istream(&m_buffer)
+      , m_buffer()
+    {}
+
+    ivectorstream(const std::vector<charT>& vector)
+      : std::basic_istream<charT, traits>::basic_istream(&m_buffer)
+      , m_buffer(vector)
     {}
 
     std::vector<charT>& vector() {

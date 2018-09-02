@@ -9,6 +9,7 @@ set(src_common_cpp
     ${COMMON_PATH}/logging.cpp
     ${COMMON_PATH}/format.cpp
     ${COMMON_PATH}/string.cpp
+    ${COMMON_PATH}/wavfile.cpp
 )
 
 set(src_common_hpp
@@ -17,6 +18,7 @@ set(src_common_hpp
     ${COMMON_PATH}/logging.hpp
     ${COMMON_PATH}/format.hpp
     ${COMMON_PATH}/string.hpp
+    ${COMMON_PATH}/wavfile.hpp
 )
 
 set(src_unittest_all
@@ -71,3 +73,4 @@ function(create_common_test base)
 endfunction()
 
 create_common_test(format_test)
+create_common_test(wavfile_test)

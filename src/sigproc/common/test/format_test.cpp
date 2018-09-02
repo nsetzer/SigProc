@@ -139,4 +139,18 @@ SIGPROC_TEST(Format_osprintb_string) {
 }
 
 
+SIGPROC_TEST(Format_ivector) {
+    {
+        fmt::ovectorstream<char> ostream;
+        fmt::osprintb(ostream, "TEST");
+
+        fmt::ivectorstream<char> istream(ostream.vector());
+
+        char buf[10];
+        istream.read(buf, sizeof(buf));
+        size_t expected = 5;
+        size_t actual = istream.gcount();
+        ASSERT_EQUAL(expected, actual);
+    }
+}
 
