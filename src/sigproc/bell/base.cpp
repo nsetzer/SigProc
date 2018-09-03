@@ -24,7 +24,7 @@ bool hasSuffix (const std::string& str, const std::string& suffix) {
 template<typename T>
 AudioDecoderBase<T>* newAudioDecoderFromPathImpl(const std::string& file_path, size_t Fs, size_t n_channels)
 {
-    ffmpeg::getFileCodecKind(file_path.c_str());
+    //ffmpeg::getFileCodecKind(file_path.c_str());
 
     AudioFormat fmt = AudioFormat::MP3;
     if (hasSuffix(file_path, ".wav")) {
@@ -33,7 +33,12 @@ AudioDecoderBase<T>* newAudioDecoderFromPathImpl(const std::string& file_path, s
         fmt = AudioFormat::FLAC;
     }
     #ifdef USE_FFMPEG
-        return new ffmpeg::Decoder<T>(fmt, static_cast<int>(Fs), static_cast<int>(n_channels));
+        if (fmt == AudioFormat::WAV) {
+            return new ffmpeg::WavDecoder<T>(static_cast<int>(Fs), static_cast<int>(n_channels));
+        } else {
+            return new ffmpeg::Decoder<T>(fmt, static_cast<int>(Fs), static_cast<int>(n_channels));
+        }
+
     #endif
     SIGPROC_THROW("decoder not supported for: " << file_path);
 }

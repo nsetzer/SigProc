@@ -58,6 +58,35 @@ public:
 
 };
 
+template <typename T>
+class WavDecoderImpl;
+
+template <typename T>
+class WavDecoder : public AudioDecoderBase<T>
+{
+    std::unique_ptr<WavDecoderImpl<T>> m_impl;
+public:
+    WavDecoder(int sample_rate, int n_channels);
+    ~WavDecoder();
+
+    // push bytes from a file (wav, mp3, flac, etc)
+    void push_data(uint8_t* data, size_t n_elements);
+
+    // access decoded samples
+    // signed types support multiple channels
+    // unsigned types contain interleaved data
+
+    //number of samples available for a given channel
+    // size is always the number of samples for the given template type
+    size_t output_size(size_t index) const;
+
+    // begining of the output array (contiguous)
+    const T* output_data(size_t index) const;
+
+    // mark the first N samples for deletion
+    void output_erase(size_t index, size_t n_elements);
+
+};
 
         } // ffmpeg
     } // bell

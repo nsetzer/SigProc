@@ -1,10 +1,12 @@
 
 #include <iostream>
 #include <vector>
+#include <cstring>
 
 #include "sigproc/bell/ffmpeg/decode.hpp"
 #include "sigproc/common/format.hpp"
 #include "sigproc/common/exception.hpp"
+#include "sigproc/common/wavfile.hpp"
 
 using namespace sigproc::common;
 
@@ -29,12 +31,15 @@ AVCodecID getFormat(AudioFormat format) {
     switch (format) {
 
     case AudioFormat::PCMS16LE:
+        std::cerr << " format s16le " << std::endl;
         return AV_CODEC_ID_PCM_S16LE;
     case AudioFormat::WAV:
+    std::cerr << " format wav " << std::endl;
         return AV_CODEC_ID_PCM_S16LE;
     case AudioFormat::MP2:
     case AudioFormat::MP3:
     case AudioFormat::MP4:
+        std::cerr << " format mp3 " << AV_CODEC_ID_MP3 << std::endl;
         return AV_CODEC_ID_MP3;
     case AudioFormat::FLAC:
         return AV_CODEC_ID_FLAC;
@@ -42,6 +47,7 @@ AVCodecID getFormat(AudioFormat format) {
     case AudioFormat::AAC:
     case AudioFormat::UNKNOWN:
     default:
+        std::cerr << " format unkown " << std::endl;
         SIGPROC_THROW("ffmpeg: unsupported format");
     }
 }
@@ -88,6 +94,42 @@ public:
     void reserve(size_t overhead) {
         size_t cap = m_data.size() + overhead;
         m_data.reserve(cap);
+    }
+
+    template<typename VALUE_TYPE>
+    bool read(VALUE_TYPE* ptr) {
+        if (size() < sizeof(VALUE_TYPE)) {
+            return false;
+        }
+
+        memcpy(ptr, &m_data[m_index], sizeof(VALUE_TYPE));
+        m_index += sizeof(VALUE_TYPE);
+
+        return true;
+    }
+
+    bool read(char* ptr, size_t n) {
+        if (size() < n) {
+            return false;
+        }
+        memcpy(ptr, &m_data[m_index], n);
+        m_index += n;
+        return true;
+    }
+
+    size_t index() {
+        return m_index;
+    }
+
+    // set and get old value
+    size_t index(size_t new_index) {
+        size_t old_index = m_index;
+        if (new_index > m_data.size()) {
+            m_index = m_data.size();
+        } else {
+            m_index = new_index;
+        }
+        return old_index;
     }
 
 };
@@ -265,6 +307,24 @@ public:
     }
     ~ResamplerImpl() {}
 
+    // initialize the resampler to accept interleaved PCM data
+    void set_input_opts(int n_channels, int sample_rate) {
+        m_src_nb_channels = n_channels;
+        if (m_src_nb_channels > 2) {
+            throw std::runtime_error("invalid number of channels");
+        }
+        m_src_rate = sample_rate;
+        if (m_src_rate < 100) {
+            SIGPROC_THROW("ffmpeg: source rate lower than expected: " << m_src_rate);
+        }
+        m_src_ch_layout = (m_src_nb_channels==2)?AV_CH_LAYOUT_STEREO:AV_CH_LAYOUT_MONO;
+        m_src_sample_fmt = AV_SAMPLE_FMT_S16;
+
+        std::cerr << "pcm channels " << m_src_nb_channels
+            << " sample_rate " << m_src_rate
+            << " fmt " << m_src_sample_fmt << std::endl;
+    }
+
     void set_input_opts(AVCodecContext *ctx, AVFrame *frame) {
         m_src_nb_channels = ctx->channels;
         if (m_src_nb_channels > 2) {
@@ -277,6 +337,9 @@ public:
         m_src_ch_layout = (m_src_nb_channels==2)?AV_CH_LAYOUT_STEREO:AV_CH_LAYOUT_MONO;
         m_src_sample_fmt = static_cast<AVSampleFormat>(frame->format);
 
+        std::cerr << "pcm channels " << m_src_nb_channels
+            << " sample_rate " << m_src_rate
+            << " fmt " << m_src_sample_fmt << std::endl;
     }
 
     void set_output_opts(int n_channels, int sample_rate) {
@@ -288,6 +351,11 @@ public:
         if (m_dst_rate < 100) {
             SIGPROC_THROW("ffmpeg: source rate lower than expected: " << m_src_rate);
         }
+
+        std::cerr << "pcm channels " << m_dst_nb_channels
+            << " sample_rate " << m_dst_rate
+            << " fmt " << m_dst_sample_fmt << std::endl;
+
         m_dst_ch_layout = (n_channels==2)?AV_CH_LAYOUT_STEREO:AV_CH_LAYOUT_MONO;
     }
 
@@ -328,6 +396,12 @@ public:
     }
 
     size_t resample(AVFrame *frame, std::vector<BufferedVector<T>>& buffers) {
+        return resample(reinterpret_cast<const uint8_t*>(frame->data), frame->nb_samples, buffers);
+    }
+
+    // returns the number of bytes pushed onto the buffer
+    // TODO: revist this, not a useful return value
+    size_t resample(const uint8_t* data, size_t nb_samples, std::vector<BufferedVector<T>>& buffers) {
         int ret;
 
         if (m_src_rate==0) {
@@ -344,7 +418,7 @@ public:
 
         // check if we need to reallocate space for the output
         m_dst_nb_samples = av_rescale_rnd(swr_get_delay(m_swr_ctx, m_src_rate) +
-                                        frame->nb_samples, m_dst_rate, m_src_rate, AV_ROUND_UP);
+                                        nb_samples, m_dst_rate, m_src_rate, AV_ROUND_UP);
         if (m_dst_nb_samples > m_max_dst_nb_samples) {
             if (m_dst_data==nullptr) {
                 ret = av_samples_alloc_array_and_samples(
@@ -364,16 +438,17 @@ public:
         }
 
         ret = swr_convert(m_swr_ctx,  m_dst_data, m_dst_nb_samples,
-                          (const uint8_t **)&frame->data, frame->nb_samples);
+                          reinterpret_cast<const uint8_t **>(&data), nb_samples);
         if (ret < 0) {
             throw std::runtime_error("convert");
         }
-
 
         int dst_bufsize = av_samples_get_buffer_size(
             &m_dst_linesize, m_dst_nb_channels, ret, m_dst_sample_fmt, 1);
 
         push_samples<T>(buffers, m_dst_nb_channels, m_dst_linesize, *m_dst_data, dst_bufsize);
+
+        //std::cerr << nb_samples << "->" << dst_bufsize << std::endl;
 
         return dst_bufsize;
     }
@@ -608,6 +683,170 @@ void Decoder<T>::output_erase(size_t index, size_t n_elements)
 }
 
 
+
+template <typename T>
+class WavDecoderImpl
+{
+
+    BufferedVector<uint8_t> m_input_buffer;
+    std::vector<BufferedVector<T>> m_output_buffer;
+    int32_t m_input_samplerate = 0;
+    int16_t m_input_channels = 0;
+
+    ResamplerImpl<T> m_resampler;
+    int m_output_channels;
+    int m_output_samplerate;
+
+public:
+    WavDecoderImpl(int sample_rate, int n_channels)
+        : m_input_buffer()
+        , m_resampler() {
+        m_output_buffer.resize(n_channels);
+        m_output_channels = n_channels;
+        m_output_samplerate = sample_rate;
+    }
+
+    ~WavDecoderImpl() {
+    }
+
+    void push_data(uint8_t* data, size_t n_elements) {
+        m_input_buffer.push_back(data, n_elements);
+    }
+
+    BufferedVector<T>& output(size_t index) {
+        if (index >= static_cast<size_t>(m_output_channels)) {
+            SIGPROC_THROW("ffmpeg: invalid channel index: " << index);
+        }
+        return m_output_buffer[index];
+    }
+
+    void decode() {
+        decode_header();
+        decode_packet();
+    }
+
+private:
+    void decode_packet() {
+
+        const uint8_t* data = m_input_buffer.data();
+        size_t size = m_input_buffer.size();
+        if (size%2==1) {
+            size -= 1;
+        }
+        m_resampler.resample(data, size>>1, m_output_buffer);
+        m_input_buffer.erase(size);
+
+    }
+    void decode_header() {
+
+        if (!m_resampler.is_configured()) {
+            size_t index = m_input_buffer.index();
+            if (decode_header_impl()) {
+                m_resampler.set_input_opts(m_input_channels, m_input_samplerate);
+                m_resampler.set_output_opts(m_output_channels, m_output_samplerate);
+                m_resampler.configure();
+            } else {
+                // not enough data to read the header, reset
+                m_input_buffer.index(index);
+            }
+        }
+    }
+
+    bool decode_header_impl() {
+
+        int16_t fmt = 0;
+        int16_t bits_per_sample = 0;
+        int32_t file_size = 0;
+        int32_t data_size = 0;
+        int32_t bitrate = 0;
+        int16_t block_align = 0;
+
+        char s[5];
+        s[4]=0;
+        int32_t offset;
+        int32_t chunksize = 0;
+
+        if(!m_input_buffer.read(s, 4)){ return false; }
+        if (memcmp("RIFF", s, 4) != 0) {
+            SIGPROC_THROW("Invalid Wave Header: not a riff file " << s);
+        }
+
+        if(!m_input_buffer.read(&file_size)){ return false; }
+
+        if(!m_input_buffer.read(s, 4)){ return false; }
+        if (memcmp("WAVE", s, 4) != 0) {
+            SIGPROC_THROW("Invalid Wave Header: wave not found");
+        }
+
+        if(!m_input_buffer.read(s, 4)){ return false; }
+        // while s is not 'fmt ', read int32_t and seek that many bytes
+        while (memcmp("fmt ", s, 4) != 0) {
+            fmt::osprintf(std::cerr, "skipping section %C\n", s);
+            // skip sections until the format section is found
+            if(!m_input_buffer.read(&offset)){ return false; }
+            m_input_buffer.index(m_input_buffer.index()+offset);
+            if(!m_input_buffer.read(s, 4)){ return false; }
+        }
+
+        if(!m_input_buffer.read(&chunksize)){ return false; }
+        if(!m_input_buffer.read(&fmt)){ return false; }
+        if (fmt != 0x01) {
+            SIGPROC_THROW("Invalid Wave Header: format is not PCM");
+        }
+
+        if(!m_input_buffer.read(&m_input_channels)){ return false; }
+        if(!m_input_buffer.read(&m_input_samplerate)){ return false; }
+        if(!m_input_buffer.read(&bitrate)){ return false; }
+        if(!m_input_buffer.read(&block_align)){ return false; }
+        if(!m_input_buffer.read(&bits_per_sample)){ return false; }
+
+        if(!m_input_buffer.read(s, 4)){ return false; }
+        if (memcmp("data", s, 4) != 0) {
+            SIGPROC_THROW(fmt::sprintf("Invalid Wave Header: data not found %C", s));
+        }
+        if(!m_input_buffer.read(&data_size)){ return false; }
+
+        return true;
+    }
+};
+
+template <typename T>
+WavDecoder<T>::WavDecoder(int sample_rate, int n_channels)
+    : m_impl(new WavDecoderImpl<T>(sample_rate, n_channels))
+{
+}
+
+template <typename T>
+WavDecoder<T>::~WavDecoder()
+{
+
+}
+
+template <typename T>
+void WavDecoder<T>::push_data(uint8_t* data, size_t n_elements)
+{
+    m_impl->push_data(data, n_elements);
+    m_impl->decode();
+}
+
+template <typename T>
+size_t WavDecoder<T>::output_size(size_t index) const
+{
+    return m_impl->output(index).size();
+}
+
+template <typename T>
+const T* WavDecoder<T>::output_data(size_t index) const
+{
+    return m_impl->output(index).data();
+}
+
+template <typename T>
+void WavDecoder<T>::output_erase(size_t index, size_t n_elements)
+{
+    m_impl->output(index).erase(n_elements);
+}
+
 /**
  * FFmpegInit handles one time operations required for FFmpeg to function
  */
@@ -630,6 +869,12 @@ template class Decoder<uint8_t>;
 template class Decoder<int16_t>;
 template class Decoder<float>;
 template class Decoder<double>;
+
+
+template class WavDecoder<uint8_t>;
+template class WavDecoder<int16_t>;
+template class WavDecoder<float>;
+template class WavDecoder<double>;
 
         } // ffmpeg
     } // bell
