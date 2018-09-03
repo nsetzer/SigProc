@@ -401,58 +401,14 @@ public:
         return m_swr_ctx != nullptr;
     }
 
-
-	size_t resample(AVFrame *frame, std::vector<BufferedVector<T>>& buffers) {
-        int ret;
-
-        if (m_src_rate==0) {
-            SIGPROC_THROW("ffmpeg: source rate not initialized");
-        }
-
-        if (m_dst_rate==0) {
-            SIGPROC_THROW("ffmpeg: destination rate not initialized");
-        }
-
-        if (m_swr_ctx==nullptr) {
-            SIGPROC_THROW("ffmpeg: context not configured");
-        }
-
-        // check if we need to reallocate space for the output
-        m_dst_nb_samples = av_rescale_rnd(swr_get_delay(m_swr_ctx, m_src_rate) +
-                                        frame->nb_samples, m_dst_rate, m_src_rate, AV_ROUND_UP);
-        if (m_dst_nb_samples > m_max_dst_nb_samples) {
-            if (m_dst_data==nullptr) {
-                ret = av_samples_alloc_array_and_samples(
-                    &m_dst_data, &m_dst_linesize, m_dst_nb_channels,
-                    m_dst_nb_samples, m_dst_sample_fmt, 0);
-
-            } else{
-                av_freep(m_dst_data);
-                ret = av_samples_alloc(
-                    m_dst_data, &m_dst_linesize, m_dst_nb_channels,
-                    m_dst_nb_samples, m_dst_sample_fmt, 1);
-            }
-            if (ret < 0) {
-                SIGPROC_THROW("ffmpeg: fatal allocation error");
-            }
-            m_max_dst_nb_samples = m_dst_nb_samples;
-        }
-
-        ret = swr_convert(m_swr_ctx,  m_dst_data, m_dst_nb_samples,
-                          (const uint8_t **)&frame->data, frame->nb_samples);
-        if (ret < 0) {
-            SIGPROC_THROW("ffmpeg: convert");
-        }
-
-
-        int dst_bufsize = av_samples_get_buffer_size(
-            &m_dst_linesize, m_dst_nb_channels, ret, m_dst_sample_fmt, 1);
-
-        push_samples<T>(buffers, m_dst_nb_channels, m_dst_linesize, *m_dst_data, dst_bufsize);
-
-        return dst_bufsize;
+    size_t resample(AVFrame *frame, std::vector<BufferedVector<T>>& buffers) {
+        uint8_t* data = reinterpret_cast<uint8_t*>(frame->data);
+        size_t nb_samples = frame->nb_samples;
+        return resample(data, frame->nb_samples, buffers);
     }
 
+    // returns the number of bytes pushed onto the buffer
+    // TODO: revist this, not a useful return value
     size_t resample(const uint8_t* frame_data, size_t nb_frame_samples, std::vector<BufferedVector<T>>& buffers) {
         int ret;
 
