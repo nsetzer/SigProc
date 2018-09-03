@@ -187,22 +187,26 @@ enum AVSampleFormat get_sample_format() {
 // return interleaved PCM data
 template<>
 enum AVSampleFormat get_sample_format<uint8_t>() {
+    std::cerr << "sample format: pcm interleaved" << std::endl;
     return AV_SAMPLE_FMT_S16;
 }
 
 // return planar 16 bit data
 template<>
 enum AVSampleFormat get_sample_format<int16_t>() {
+    std::cerr << "sample format: pcm planar" << std::endl;
     return AV_SAMPLE_FMT_S16P;
 }
 
 template<>
 enum AVSampleFormat get_sample_format<float>() {
+    std::cerr << "sample format: float planar" << std::endl;
     return AV_SAMPLE_FMT_FLTP;
 }
 
 template<>
 enum AVSampleFormat get_sample_format<double>() {
+    std::cerr << "sample format: double planar" << std::endl;
     return AV_SAMPLE_FMT_DBLP;
 }
 
@@ -238,6 +242,12 @@ void push_samples<int16_t>(std::vector<BufferedVector<int16_t>>& buffers, int nb
     const int16_t* cdata = reinterpret_cast<const int16_t*>(data);
     int datasize = datalen / sizeof(int16_t);
     buffers[0].push_back(cdata, datasize);
+    float rms = 0.0;
+    //for (int i =0; i < datasize; i++) {
+    //    float v = cdata[i] / 32768.0;
+    //    rms += v*v;
+    //}
+    //std::cout << "rms: " << rms << std::endl;
 }
 
 template<>
@@ -296,8 +306,6 @@ public:
         m_src_nb_channels = 0;
         m_dst_nb_channels = 0;
         // source sample format is set by the decoder
-        m_src_sample_fmt = AV_SAMPLE_FMT_FLTP;
-        m_dst_sample_fmt = get_sample_format<T>();
         m_src_rate = 0;
         m_dst_rate = 0;
         m_dst_linesize = 0;
@@ -311,7 +319,7 @@ public:
     void set_input_opts(int n_channels, int sample_rate) {
         m_src_nb_channels = n_channels;
         if (m_src_nb_channels > 2) {
-            throw std::runtime_error("invalid number of channels");
+            SIGPROC_THROW("ffmpeg: invalid number of channels");
         }
         m_src_rate = sample_rate;
         if (m_src_rate < 100) {
@@ -319,16 +327,12 @@ public:
         }
         m_src_ch_layout = (m_src_nb_channels==2)?AV_CH_LAYOUT_STEREO:AV_CH_LAYOUT_MONO;
         m_src_sample_fmt = AV_SAMPLE_FMT_S16;
-
-        std::cerr << "pcm channels " << m_src_nb_channels
-            << " sample_rate " << m_src_rate
-            << " fmt " << m_src_sample_fmt << std::endl;
     }
 
     void set_input_opts(AVCodecContext *ctx, AVFrame *frame) {
         m_src_nb_channels = ctx->channels;
         if (m_src_nb_channels > 2) {
-            throw std::runtime_error("invalid number of channels");
+            SIGPROC_THROW("ffmpeg: invalid number of channels");
         }
         m_src_rate = frame->sample_rate;
         if (m_src_rate < 100) {
@@ -336,27 +340,20 @@ public:
         }
         m_src_ch_layout = (m_src_nb_channels==2)?AV_CH_LAYOUT_STEREO:AV_CH_LAYOUT_MONO;
         m_src_sample_fmt = static_cast<AVSampleFormat>(frame->format);
-
-        std::cerr << "pcm channels " << m_src_nb_channels
-            << " sample_rate " << m_src_rate
-            << " fmt " << m_src_sample_fmt << std::endl;
     }
 
     void set_output_opts(int n_channels, int sample_rate) {
         m_dst_nb_channels = n_channels;
         if (m_dst_nb_channels > 2) {
-            throw std::runtime_error("invalid number of channels");
+            SIGPROC_THROW("ffmpeg: invalid number of channels");
         }
         m_dst_rate = sample_rate;
         if (m_dst_rate < 100) {
             SIGPROC_THROW("ffmpeg: source rate lower than expected: " << m_src_rate);
         }
 
-        std::cerr << "pcm channels " << m_dst_nb_channels
-            << " sample_rate " << m_dst_rate
-            << " fmt " << m_dst_sample_fmt << std::endl;
-
         m_dst_ch_layout = (n_channels==2)?AV_CH_LAYOUT_STEREO:AV_CH_LAYOUT_MONO;
+        m_dst_sample_fmt = get_sample_format<T>();
     }
 
     bool configure() {
@@ -369,7 +366,7 @@ public:
         }
         m_swr_ctx = swr_alloc();
         if (!m_swr_ctx) {
-            throw std::runtime_error("m_swr_ctx alloc");
+            SIGPROC_THROW("ffmpeg: m_swr_ctx alloc");
         }
 
         av_opt_set_int(m_swr_ctx, "in_channel_layout",    m_src_ch_layout, 0);
@@ -382,11 +379,20 @@ public:
         av_opt_set_int(m_swr_ctx, "filter_type", SWR_FILTER_TYPE_CUBIC, 0);
 
         if ((ret = swr_init(m_swr_ctx)) < 0) {
-            throw std::runtime_error("m_swr_ctx init");
+            SIGPROC_THROW("ffmpeg: m_swr_ctx init");
         }
 
         m_max_dst_nb_samples = 0;
         m_dst_nb_samples = 0;
+
+        std::cerr << "inp: m_src_nb_channels " << m_src_nb_channels
+            << " m_src_ch_layout " << m_src_ch_layout
+            << " m_src_rate " << m_src_rate
+            << " m_src_sample_fmt " << m_src_sample_fmt << std::endl;
+        std::cerr << "inp: m_dst_nb_channels " << m_dst_nb_channels
+            << " m_dst_ch_layout " << m_dst_ch_layout
+            << " m_dst_rate " << m_dst_rate
+            << " m_dst_sample_fmt " << m_dst_sample_fmt << std::endl;
 
         return true;
     }
@@ -396,7 +402,9 @@ public:
     }
 
     size_t resample(AVFrame *frame, std::vector<BufferedVector<T>>& buffers) {
-        return resample(reinterpret_cast<const uint8_t*>(frame->data), frame->nb_samples, buffers);
+        const uint8_t* data = reinterpret_cast<const uint8_t*>(frame->data);
+        size_t nb_samples = frame->nb_samples*m_codec_ctx->channels;
+        return resample(data, nb_samples, frame->nb_samples, buffers);
     }
 
     // returns the number of bytes pushed onto the buffer
@@ -432,15 +440,15 @@ public:
                     m_dst_nb_samples, m_dst_sample_fmt, 1);
             }
             if (ret < 0) {
-                throw std::runtime_error("fatal allocation error");
+                SIGPROC_THROW("ffmpeg: fatal allocation error");
             }
             m_max_dst_nb_samples = m_dst_nb_samples;
         }
 
         ret = swr_convert(m_swr_ctx,  m_dst_data, m_dst_nb_samples,
-                          reinterpret_cast<const uint8_t **>(&data), nb_samples);
+                          &data, nb_samples);
         if (ret < 0) {
-            throw std::runtime_error("convert");
+            SIGPROC_THROW("ffmpeg: convert");
         }
 
         int dst_bufsize = av_samples_get_buffer_size(
@@ -470,6 +478,8 @@ class DecoderImpl
     AVCodecID m_audio_codec_id;
     int m_output_channels;
     int m_output_samplerate;
+
+    FILE *outfile=NULL;
 
 public:
     DecoderImpl(AVCodecID format, int sample_rate, int n_channels)
@@ -515,10 +525,16 @@ public:
 private:
 
     void set_codec(AVCodecID format) {
+        std::cerr << "set codec: " << format << std::endl;
         m_audio_codec_id = format;
     }
 
     void init() {
+
+        outfile = fopen("./out.raw", "wb");
+        if (!outfile) {
+            SIGPROC_THROW("ffmpeg: ./out.raw");
+        }
 
         m_codec = avcodec_find_decoder(m_audio_codec_id);
         if (!m_codec) {
@@ -554,6 +570,9 @@ private:
     }
 
     void release() {
+        if (outfile!=nullptr) {
+            fclose(outfile);
+        }
         if (m_parser!=nullptr)
             av_parser_close(m_parser);
         if (m_codec_ctx!=nullptr)
@@ -570,7 +589,7 @@ private:
 
         if (!m_decoded_frame) {
             if (!(m_decoded_frame = av_frame_alloc())) {
-                throw std::runtime_error("frame");
+                SIGPROC_THROW("ffmpeg: frame");
             }
         }
 
@@ -581,7 +600,7 @@ private:
                                AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
 
         if (ret < 0) {
-            throw std::runtime_error("error while parsing");
+            SIGPROC_THROW("ffmpeg: error while parsing");
         }
 
         // erase the consumed elements
@@ -628,7 +647,7 @@ private:
             // any format to the requested format.
             m_resampler.resample(m_decoded_frame, m_output_buffer);
 
-            /*
+
             // by default the mp3 codec outputs planar floats
             // this is an example of copying planar floats out as
             // interleaved data
@@ -636,10 +655,10 @@ private:
 
             for (int i = 0; i < m_decoded_frame->nb_samples; i++) {
                 for (int ch = 0; ch < m_codec_ctx->channels; ch++) {
-                    fwrite(m_decoded_frame->data[ch] + data_size*i, 1, data_size, m_tempfile);
+                    fwrite(m_decoded_frame->data[ch] + data_size*i, 1, data_size, outfile);
                 }
             }
-            */
+
 
         }
     }
@@ -768,14 +787,14 @@ private:
 
         if(!m_input_buffer.read(s, 4)){ return false; }
         if (memcmp("RIFF", s, 4) != 0) {
-            SIGPROC_THROW("Invalid Wave Header: not a riff file " << s);
+            SIGPROC_THROW("ffmpeg: Invalid Wave Header: not a riff file " << s);
         }
 
         if(!m_input_buffer.read(&file_size)){ return false; }
 
         if(!m_input_buffer.read(s, 4)){ return false; }
         if (memcmp("WAVE", s, 4) != 0) {
-            SIGPROC_THROW("Invalid Wave Header: wave not found");
+            SIGPROC_THROW("ffmpeg: Invalid Wave Header: wave not found");
         }
 
         if(!m_input_buffer.read(s, 4)){ return false; }
@@ -791,7 +810,7 @@ private:
         if(!m_input_buffer.read(&chunksize)){ return false; }
         if(!m_input_buffer.read(&fmt)){ return false; }
         if (fmt != 0x01) {
-            SIGPROC_THROW("Invalid Wave Header: format is not PCM");
+            SIGPROC_THROW("ffmpeg: Invalid Wave Header: format is not PCM");
         }
 
         if(!m_input_buffer.read(&m_input_channels)){ return false; }
@@ -802,7 +821,7 @@ private:
 
         if(!m_input_buffer.read(s, 4)){ return false; }
         if (memcmp("data", s, 4) != 0) {
-            SIGPROC_THROW(fmt::sprintf("Invalid Wave Header: data not found %C", s));
+            SIGPROC_THROW(fmt::sprintf("ffmpeg: Invalid Wave Header: data not found %C", s));
         }
         if(!m_input_buffer.read(&data_size)){ return false; }
 

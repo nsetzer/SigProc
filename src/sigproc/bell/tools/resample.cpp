@@ -48,7 +48,9 @@ void write_wave_header(int16_t num_channels, int32_t sample_rate, std::ostream& 
     fwrite(fout, &kDataSize);
 }
 
-void resample(std::istream* fin, std::ostream* fout, AudioDecoderBase<uint8_t>& decoder)
+#define OUTPUT_TYPE uint8_t
+
+void resample(std::istream* fin, std::ostream* fout, AudioDecoderBase<OUTPUT_TYPE>& decoder)
 {
     constexpr size_t data_capacity = 2048;
     uint8_t data[data_capacity];
@@ -62,7 +64,7 @@ void resample(std::istream* fin, std::ostream* fout, AudioDecoderBase<uint8_t>& 
         size_t n_elements = decoder.output_size(0);
         if (n_elements>0) {
             fout->write(reinterpret_cast<const char*>(decoder.output_data(0)),
-                        n_elements);
+                        n_elements*sizeof(OUTPUT_TYPE));
             decoder.output_erase(0, n_elements);
             count+=n_elements;
         }
@@ -97,7 +99,7 @@ int main(int argc, char* argv[])
     //}
 
     try {
-        AudioDecoderBase<uint8_t>* pDecoder = newAudioDecoderFromPath<uint8_t>(args[1], 16000, 1);
+        AudioDecoderBase<OUTPUT_TYPE>* pDecoder = newAudioDecoderFromPath<OUTPUT_TYPE>(args[1], 16000, 1);
 
         write_wave_header(1, 16000, *fout);
         resample(fin, fout, *pDecoder);
