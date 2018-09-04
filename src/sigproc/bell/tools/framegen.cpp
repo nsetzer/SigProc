@@ -22,43 +22,41 @@ void fwrite<char>(std::ostream& fout, const char* ptr) {
     fout.write(ptr, strlen(ptr));
 }
 
-void write_wave_header(int16_t num_channels, int32_t sample_rate, std::ostream& fout) {
+#define OUTPUT_TYPE double
 
-    constexpr int16_t kPcm = 0x01;
-    constexpr int16_t kBitsPerSample = 16;
-    constexpr int32_t kBitrate = 16;
-    constexpr int32_t kFileSize = 0x0FFFFFFF + 1;
-    constexpr int32_t kHeaderSize = 44;
-    constexpr int32_t kDataSize = kFileSize - kHeaderSize + 8;
+size_t n_samples=0;
+size_t n_frames=0;
 
-    const int32_t bitrate = (num_channels * sample_rate * kBitrate) >> 3;
-    const int16_t block_align = 2 * num_channels;
+void generate_frames(
+    std::ostream* fout,
+    AudioDecoderBase<OUTPUT_TYPE>& decoder,
+    algorithm::mfcc::FeatureGenerator<OUTPUT_TYPE>& frameGen,
+    std::vector<double> frame)
+{
 
-    fwrite(fout, "RIFF");
-    fwrite(fout, &kFileSize);
-    fwrite(fout, "WAVE");
-    fwrite(fout, "fmt ");
-    fwrite(fout, &kBitrate); // subchunk size
-    fwrite(fout, &kPcm);
-    fwrite(fout, &num_channels);
-    fwrite(fout, &sample_rate);
-    fwrite(fout, &bitrate);
-    fwrite(fout, &block_align);
-    fwrite(fout, &kBitsPerSample);
-    fwrite(fout, "data");
-    fwrite(fout, &kDataSize);
+    while (decoder.output_size(0) >= frameGen.windowSize()) {
+        const double* data = decoder.output_data(0);
+        frameGen.filter(decoder.output_data(0), frame);
+        decoder.output_erase(0, frameGen.frameStep());
+
+        n_samples+=frameGen.frameStep();
+        n_frames ++;
+
+        fout->write(reinterpret_cast<const char*>(&frame[0]),
+                    sizeof(double)*frame.size());
+    }
+
 }
 
-void do_framegen(std::istream* fin, std::ostream* fout,
-    AudioDecoderBase<double>& decoder, algorithm::mfcc::FeatureGenerator<double>& frameGen)
+void resample(std::istream* fin, std::ostream* fout,
+    AudioDecoderBase<OUTPUT_TYPE>& decoder,
+    algorithm::mfcc::FeatureGenerator<OUTPUT_TYPE>& frameGen)
 {
-    constexpr size_t data_capacity = 2048;
+    constexpr size_t data_capacity = 20480;
     uint8_t data[data_capacity];
     size_t data_length;
 
     std::vector<double> frame;
-    std::vector<double> fdata;
-    fdata.resize(frameGen.windowSize());
 
     int32_t kSampleRate = 16000;
     int32_t kFrameSize = 40;
@@ -69,35 +67,22 @@ void do_framegen(std::istream* fin, std::ostream* fout,
     fout->write(reinterpret_cast<const char*>(&kFrameStep), sizeof(int32_t));
     fout->write(reinterpret_cast<const char*>(&kUnused), sizeof(int32_t));
 
-    size_t count = 0;
+    n_samples=0;
+    n_frames=0;
+
     while (fin->good()) {
         fin->read(reinterpret_cast<char*>(data), data_capacity);
         decoder.push_data(data, fin->gcount());
-
-        //while (decoder.output_size(0)/2 >= frameGen.windowSize()) {
-        //    const int16_t* idata = reinterpret_cast<const int16_t*>(decoder.output_data(0));
-        //    for (size_t i=0; i<frameGen.windowSize(); i++) {
-        //        fdata[i] = idata[i]/32768.0;
-        //    }
-        //    frameGen.filter(fdata, frame);
-        //    decoder.output_erase(0, frameGen.frameStep()*sizeof(int16_t));
-        while (decoder.output_size(0) >= frameGen.windowSize()) {
-            const double* data = decoder.output_data(0);
-            double total = 0.0;
-            for (size_t i =0; i < decoder.output_size(0); i ++) {
-                total += data[i] * data[i];
-            }
-            frameGen.filter(decoder.output_data(0), frame);
-            decoder.output_erase(0, frameGen.frameStep());
-
-            count ++;
-
-            fout->write(reinterpret_cast<const char*>(&frame[0]),
-                        sizeof(double)*frame.size());
-        }
+        generate_frames(fout, decoder, frameGen, frame);
+    }
+    // push one extra empty packet to flush the decoder
+    {
+        decoder.push_data(data, 0);
+        generate_frames(fout, decoder, frameGen, frame);
     }
 
-    std::cout << "produce " << count << " frames" << std::endl;
+    fmt::osprintf(std::cout, "%.2f + %d unused samples\n", n_samples/16000.0, decoder.output_size(0));
+    fmt::osprintf(std::cout, "produced %d frames\n", n_frames);
 }
 
 int main(int argc, char* argv[])
@@ -111,19 +96,19 @@ int main(int argc, char* argv[])
         args.push_back(argv[i]);
     }
 
-    if (args.size() > 1 && args[1] != "-") {
-        fin = new std::ifstream(args[1].c_str());
+    if (args.size() != 3) {
+        std::cerr << "usage: $0 in out" << std::endl;
+        return -1;
     }
 
-    if (args.size() > 2 && args[2] != "-") {
-        fout = new std::ofstream(args[2].c_str());
-    }
+    fin = new std::ifstream(args[1].c_str());
+    fout = new std::ofstream(args[2].c_str());
 
     try {
-        AudioDecoderBase<double>* pDecoder = newAudioDecoderFromKind<double>("mp3", 16000, 1);
-        algorithm::mfcc::FeatureGenerator<double> frameGen;
+        AudioDecoderBase<OUTPUT_TYPE>* pDecoder = newAudioDecoderFromPath<OUTPUT_TYPE>(args[1], 16000, 1);
+        algorithm::mfcc::FeatureGenerator<OUTPUT_TYPE> frameGen;
 
-        do_framegen(fin, fout, *pDecoder, frameGen);
+        resample(fin, fout, *pDecoder, frameGen);
 
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
@@ -139,3 +124,5 @@ int main(int argc, char* argv[])
         delete fout;
     }
 }
+
+

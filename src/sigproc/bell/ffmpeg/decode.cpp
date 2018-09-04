@@ -42,6 +42,7 @@ AVCodecID getFormat(AudioFormat format) {
         std::cerr << " format mp3 " << AV_CODEC_ID_MP3 << std::endl;
         return AV_CODEC_ID_MP3;
     case AudioFormat::FLAC:
+        std::cerr << " format flac " << AV_CODEC_ID_FLAC << std::endl;
         return AV_CODEC_ID_FLAC;
     case AudioFormat::M4A:
     case AudioFormat::AAC:
@@ -240,6 +241,7 @@ template<>
 void push_samples<int16_t>(std::vector<BufferedVector<int16_t>>& buffers, int nb_channels, int linesize, const uint8_t* data, int datalen)
 {
     // TODO channels are ignored for this type, and they should not be
+    //std::cout << " int16_t linesize: " << linesize << " channels: " << nb_channels << " data_size: " << datalen << std::endl;
     const int16_t* cdata = reinterpret_cast<const int16_t*>(data);
     int datasize = datalen / sizeof(int16_t);
     buffers[0].push_back(cdata, datasize);
@@ -255,6 +257,7 @@ template<>
 void push_samples<float>(std::vector<BufferedVector<float>>& buffers, int nb_channels, int linesize, const uint8_t* data, int datalen)
 {
     // TODO channels are ignored for this type, and they should not be
+    //std::cout << " float linesize: " << linesize << " channels: " << nb_channels << " data_size: " << datalen << std::endl;
     const float* cdata = reinterpret_cast<const float*>(data);
     int datasize = datalen / sizeof(float);
     buffers[0].push_back(cdata, datasize);
@@ -401,8 +404,7 @@ public:
         return m_swr_ctx != nullptr;
     }
 
-
-	size_t resample(AVFrame *frame, std::vector<BufferedVector<T>>& buffers) {
+    size_t resample(AVFrame *frame, std::vector<BufferedVector<T>>& buffers) {
         int ret;
 
         if (m_src_rate==0) {
@@ -442,15 +444,26 @@ public:
                           (const uint8_t **)&frame->data, frame->nb_samples);
         if (ret < 0) {
             SIGPROC_THROW("ffmpeg: convert");
-        }
+        } else if (ret > 0) {
 
-
-        int dst_bufsize = av_samples_get_buffer_size(
+            int dst_bufsize = av_samples_get_buffer_size(
             &m_dst_linesize, m_dst_nb_channels, ret, m_dst_sample_fmt, 1);
 
-        push_samples<T>(buffers, m_dst_nb_channels, m_dst_linesize, *m_dst_data, dst_bufsize);
+            if (dst_bufsize < 0) {
+                SIGPROC_THROW("ffmpeg: error samples "
+                    << " m_dst_linesize " << m_dst_linesize
+                    << " m_dst_nb_channels " << m_dst_nb_channels
+                    << " ret " << ret
+                );
+            }
 
-        return dst_bufsize;
+            push_samples<T>(buffers, m_dst_nb_channels, m_dst_linesize, *m_dst_data, dst_bufsize);
+
+            return dst_bufsize;
+
+        } else {
+            return 0;
+        }
     }
 
     size_t resample(const uint8_t* frame_data, size_t nb_frame_samples, std::vector<BufferedVector<T>>& buffers) {
@@ -493,15 +506,27 @@ public:
                           &frame_data, nb_frame_samples);
         if (ret < 0) {
             SIGPROC_THROW("ffmpeg: convert");
-        }
+        } else if (ret > 0) {
 
-
-        int dst_bufsize = av_samples_get_buffer_size(
+            int dst_bufsize = av_samples_get_buffer_size(
             &m_dst_linesize, m_dst_nb_channels, ret, m_dst_sample_fmt, 1);
 
-        push_samples<T>(buffers, m_dst_nb_channels, m_dst_linesize, *m_dst_data, dst_bufsize);
+            if (dst_bufsize < 0) {
+                SIGPROC_THROW("ffmpeg: error samples "
+                    << " m_dst_linesize " << m_dst_linesize
+                    << " m_dst_nb_channels " << m_dst_nb_channels
+                    << " ret " << ret
+                );
+            }
 
-        return dst_bufsize;
+            push_samples<T>(buffers, m_dst_nb_channels, m_dst_linesize, *m_dst_data, dst_bufsize);
+
+            return dst_bufsize;
+
+        } else {
+            return 0;
+        }
+
     }
 
 };
@@ -568,8 +593,8 @@ public:
 private:
 
     void set_codec(AVCodecID format) {
-        std::cerr << "set codec: " << format << " forcing " << AV_CODEC_ID_MP3 << std::endl;
-        m_audio_codec_id = AV_CODEC_ID_MP3; // format;
+        std::cerr << "set codec: " << format << std::endl;
+        m_audio_codec_id = format; // format;
     }
 
     void init() {
@@ -610,6 +635,11 @@ private:
             SIGPROC_THROW("ffmpeg: open2");
         }
 
+        if (!(m_decoded_frame = av_frame_alloc())) {
+            release();
+            SIGPROC_THROW("ffmpeg: frame");
+        }
+
     }
 
     void release() {
@@ -630,11 +660,11 @@ private:
 
         int ret;
 
-        if (!m_decoded_frame) {
-            if (!(m_decoded_frame = av_frame_alloc())) {
-                SIGPROC_THROW("ffmpeg: frame");
-            }
-        }
+        //if (!m_decoded_frame) {
+        //    if (!(m_decoded_frame = av_frame_alloc())) {
+        //        SIGPROC_THROW("ffmpeg: frame");
+        //    }
+        //}
 
         ret = av_parser_parse2(m_parser, m_codec_ctx,
                                &m_pkt->data, &m_pkt->size,
@@ -662,6 +692,7 @@ private:
 
         ret = avcodec_send_packet(m_codec_ctx, m_pkt);
         if (ret < 0) {
+            fmt::osprintf(std::cerr, "avcodec error: unable to send packet: %d\n", ret);
             return;
         }
 
@@ -669,9 +700,11 @@ private:
             ret = avcodec_receive_frame(m_codec_ctx, m_decoded_frame);
 
             if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+                //std::cerr << "return value a: " << ret << std::endl;
                 return;
             }
             else if (ret < 0) {
+                fmt::osprintf(std::cerr, "avcodec error: unable to receive frame: %d\n", ret);
                 return;
             }
 
@@ -694,6 +727,7 @@ private:
             // by default the mp3 codec outputs planar floats
             // this is an example of copying planar floats out as
             // interleaved data
+            /*
             int data_size = av_get_bytes_per_sample(m_codec_ctx->sample_fmt);
 
             for (int i = 0; i < m_decoded_frame->nb_samples; i++) {
@@ -701,6 +735,7 @@ private:
                     fwrite(m_decoded_frame->data[ch] + data_size*i, 1, data_size, m_tmpfile);
                 }
             }
+            */
 
 
         }

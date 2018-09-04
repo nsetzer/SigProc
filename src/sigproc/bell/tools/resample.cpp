@@ -52,7 +52,7 @@ void write_wave_header(int16_t num_channels, int32_t sample_rate, std::ostream& 
 
 void resample(std::istream* fin, std::ostream* fout, AudioDecoderBase<OUTPUT_TYPE>& decoder)
 {
-    constexpr size_t data_capacity = 2048;
+    constexpr size_t data_capacity = 20480;
     uint8_t data[data_capacity];
     size_t data_length;
 
@@ -69,6 +69,19 @@ void resample(std::istream* fin, std::ostream* fout, AudioDecoderBase<OUTPUT_TYP
             count+=n_elements;
         }
     }
+    // push one extra empty packet to flush the decoder
+    {
+        decoder.push_data(data, 0);
+
+        size_t n_elements = decoder.output_size(0);
+        if (n_elements>0) {
+            fout->write(reinterpret_cast<const char*>(decoder.output_data(0)),
+                        n_elements*sizeof(OUTPUT_TYPE));
+            decoder.output_erase(0, n_elements);
+            count+=n_elements;
+        }
+    }
+
     std::cout << static_cast<double>(count)/16000/2 << std::endl;
 }
 
@@ -93,7 +106,6 @@ int main(int argc, char* argv[])
     //if (args.size() > 1 && args[1] != "-") {
     //    fin = new std::ifstream(args[1].c_str());
     //}
-
     //if (args.size() > 2 && args[2] != "-") {
     //    fout = new std::ofstream(args[2].c_str());
     //}
