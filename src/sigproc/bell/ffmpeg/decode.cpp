@@ -90,7 +90,11 @@ public:
     }
 
     void erase(size_t n_elements) {
+
         m_index += n_elements;
+        if (m_index > m_data.size()) {
+            m_index = m_data.size();
+        }
     }
 
     void reserve(size_t overhead) {
